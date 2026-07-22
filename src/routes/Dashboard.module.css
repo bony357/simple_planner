@@ -1,0 +1,84 @@
+.dash {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--gap-lg) var(--gap-lg) var(--gap);
+}
+.header h1 {
+  font-size: var(--font-size-lg);
+}
+
+/* Dwie kolumny: lewa (plan + agenda) szersza, prawa (to-do) węższa. */
+.cols {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: var(--gap-lg);
+  padding: 0 var(--gap-lg) var(--gap-lg);
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-lg);
+  min-height: 0;
+  overflow: hidden;
+}
+/* Plan dnia ~2/3 wysokości, Najbliższe dni ~1/3. */
+.dayPlanSlot {
+  flex: 2 1 0;
+  min-height: 0;
+  display: flex;
+}
+.upcomingSlot {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+}
+.dayPlanSlot > *,
+.upcomingSlot > * {
+  flex: 1;
+  width: 100%;
+}
+
+.right {
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+.right > * {
+  flex: 1;
+  width: 100%;
+}
+
+/* Wąskie ekrany (telefon w pionie) — jedna kolumna, naturalne przewijanie. */
+@media (max-width: 700px) {
+  .cols {
+    display: block;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .left {
+    overflow: visible;
+    margin-bottom: var(--gap-lg);
+  }
+  .dayPlanSlot {
+    display: block;
+    height: 60vh;
+  }
+  .upcomingSlot {
+    display: block;
+  }
+  .right {
+    overflow: visible;
+  }
+}

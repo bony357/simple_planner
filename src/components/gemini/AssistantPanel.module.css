@@ -1,0 +1,56 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+.error {
+  color: var(--danger);
+  font-weight: 600;
+}
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+.summary {
+  margin: 0;
+  padding: var(--gap);
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+}
+.suggestion {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--gap);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.sugHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.badge {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+.sugTitle {
+  font-weight: 600;
+}
+.reason {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+.done {
+  color: var(--success);
+  font-weight: 700;
+}

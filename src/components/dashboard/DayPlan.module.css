@@ -1,0 +1,51 @@
+/* Panel wypełnia swój slot kolumny; oś czasu przewija się wewnątrz. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.toggle {
+  display: flex;
+  gap: 4px;
+}
+.toggle button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+}
+.toggle button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.dayLabel {
+  flex: 0 0 auto;
+  padding: 8px var(--gap-lg) 0;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+/* Przewijalny obszar osi czasu z widocznymi pustymi slotami. */
+.calWrap {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: var(--gap) var(--gap-lg);
+}
+
+.hint {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0 var(--gap-lg) var(--gap);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}

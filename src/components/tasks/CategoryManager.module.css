@@ -1,0 +1,28 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.row .input {
+  flex: 1;
+}
+.swatches {
+  display: flex;
+  gap: 4px;
+}
+.swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  padding: 0;
+}
+.swatch[data-active='true'] {
+  border-color: var(--text);
+  transform: scale(1.15);
+}

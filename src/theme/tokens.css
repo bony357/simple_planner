@@ -1,0 +1,100 @@
+/* Tokeny motywu — dwa warianty przez atrybut data-theme na <html>.
+   color  → tryb kolorowy (domyślny)
+   eink   → tryb monochromatyczny, wysoki kontrast, bez animacji/cieni.
+   Wszystkie komponenty korzystają wyłącznie z tych zmiennych. */
+
+:root,
+:root[data-theme='color'] {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --surface-2: #eef1f4;
+  --text: #1f2933;
+  --text-muted: #647084;
+  --border: #d7dee6;
+  --border-strong: #b6c1cd;
+
+  --accent: #2f6fed;
+  --accent-contrast: #ffffff;
+  --accent-soft: #e6efff;
+
+  --success: #1f9d55;
+  --danger: #d64545;
+  --warning: #e0a106;
+
+  --done-bg: #eef7f1;
+  --done-text: #6b8577;
+
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 8px rgba(31, 41, 51, 0.08);
+  --shadow-lg: 0 8px 28px rgba(31, 41, 51, 0.16);
+
+  --touch-target: 48px;
+  --gap: 12px;
+  --gap-lg: 20px;
+
+  --font-size: 17px;
+  --font-size-sm: 14px;
+  --font-size-lg: 21px;
+
+  --transition: 160ms ease;
+
+  /* Domyślne kolory kategorii (paleta) */
+  --cat-1: #2f6fed;
+  --cat-2: #1f9d55;
+  --cat-3: #e0a106;
+  --cat-4: #d64545;
+  --cat-5: #8b5cf6;
+  --cat-6: #0891b2;
+}
+
+:root[data-theme='eink'] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f0f0f0;
+  --text: #000000;
+  --text-muted: #3a3a3a;
+  --border: #000000;
+  --border-strong: #000000;
+
+  --accent: #000000;
+  --accent-contrast: #ffffff;
+  --accent-soft: #e2e2e2;
+
+  --success: #000000;
+  --danger: #000000;
+  --warning: #000000;
+
+  --done-bg: #ededed;
+  --done-text: #4a4a4a;
+
+  --radius: 4px;
+  --radius-sm: 3px;
+  --shadow: none;
+  --shadow-lg: none;
+
+  --touch-target: 52px;
+  --gap: 12px;
+  --gap-lg: 20px;
+
+  --font-size: 18px;
+  --font-size-sm: 15px;
+  --font-size-lg: 23px;
+
+  --transition: 0ms;
+
+  /* W e-ink kategorie nie mają koloru — rozróżniane obramowaniem/etykietą. */
+  --cat-1: #000000;
+  --cat-2: #000000;
+  --cat-3: #000000;
+  --cat-4: #000000;
+  --cat-5: #000000;
+  --cat-6: #000000;
+}
+
+/* W e-ink wyłączamy wszystkie animacje/przejścia globalnie. */
+:root[data-theme='eink'] * {
+  animation-duration: 0ms !important;
+  transition-duration: 0ms !important;
+  box-shadow: none !important;
+}

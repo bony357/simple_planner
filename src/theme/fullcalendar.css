@@ -1,0 +1,81 @@
+/* Dopasowanie FullCalendar do tokenów motywu + tryb e-ink.
+   FullCalendar udostępnia zmienne --fc-* które nadpisujemy. */
+
+.fc {
+  --fc-border-color: var(--border);
+  --fc-page-bg-color: var(--surface);
+  --fc-neutral-bg-color: var(--surface-2);
+  --fc-today-bg-color: var(--accent-soft);
+  --fc-now-indicator-color: var(--danger);
+  --fc-event-bg-color: var(--accent);
+  --fc-event-border-color: var(--accent);
+  --fc-event-text-color: var(--accent-contrast);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+}
+
+/* Większe cele dotykowe w nagłówku i przyciskach */
+.fc .fc-button {
+  min-height: var(--touch-target);
+  padding: 0 14px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-weight: 600;
+  text-transform: none;
+}
+.fc .fc-button:hover,
+.fc .fc-button-primary:not(:disabled).fc-button-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+.fc .fc-toolbar-title {
+  font-size: var(--font-size);
+  font-weight: 700;
+}
+
+/* Wysokość slotów 15-minutowych — wygodne do dotyku */
+.fc .fc-timegrid-slot {
+  height: 22px;
+}
+.fc .fc-timegrid-slot-label {
+  font-size: var(--font-size-sm);
+}
+
+.fc-event {
+  border-radius: var(--radius-sm);
+  padding: 1px 4px;
+  cursor: grab;
+}
+.fc-event.fc-event-done {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+/* Uchwyt do rozciągania — większy dla palca */
+.fc .fc-timegrid-event .fc-event-resizer {
+  height: 14px;
+}
+
+/* ---- Tryb e-ink ---- */
+:root[data-theme='eink'] .fc {
+  --fc-today-bg-color: #f0f0f0;
+  --fc-now-indicator-color: #000000;
+  --fc-event-bg-color: #ffffff;
+  --fc-event-border-color: #000000;
+  --fc-event-text-color: #000000;
+}
+:root[data-theme='eink'] .fc-event {
+  border: 2px solid #000000 !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  font-weight: 600;
+}
+/* Wydarzenia powiązane z zadaniem — wzór, by odróżnić bez koloru */
+:root[data-theme='eink'] .fc-event.fc-event-task {
+  border-left-width: 6px !important;
+}
+:root[data-theme='eink'] .fc .fc-button {
+  border-width: 2px;
+}

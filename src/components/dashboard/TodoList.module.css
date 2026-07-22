@@ -1,0 +1,55 @@
+/* Panel wypełnia kolumnę; lista grup przewija się wewnątrz. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.quick {
+  flex: 0 0 auto;
+  display: flex;
+  gap: var(--gap);
+  padding: var(--gap) var(--gap-lg);
+}
+.quick .input {
+  flex: 1;
+}
+
+.groups {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-lg);
+  padding: 0 var(--gap-lg);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.groupTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.groupDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+}
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

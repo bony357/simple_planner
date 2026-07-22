@@ -1,0 +1,64 @@
+/* Panel wypełnia slot kolumny; lista przewija się wewnątrz. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.agenda {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: var(--gap) var(--gap-lg) var(--gap-lg);
+}
+.dayBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dayHead {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: capitalize;
+  color: var(--text-muted);
+}
+.events {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.event {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.bar {
+  width: 5px;
+  align-self: stretch;
+  border-radius: 3px;
+  border: 1px solid var(--border-strong);
+}
+.time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+.title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
