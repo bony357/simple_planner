@@ -1,6 +1,7 @@
 import { HashRouter, NavLink, Navigate, Route, Routes } from 'react-router-dom'
 import Dashboard from './routes/Dashboard'
 import Tasks from './routes/Tasks'
+import Recurring from './routes/Recurring'
 import Settings from './routes/Settings'
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/tasks" element={<Tasks />} />
+            <Route path="/recurring" element={<Recurring />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -23,6 +25,10 @@ export default function App() {
           <NavLink to="/tasks">
             <span className="nav-icon">✓</span>
             <span>Zadania</span>
+          </NavLink>
+          <NavLink to="/recurring">
+            <span className="nav-icon">🔁</span>
+            <span>Cykliczne</span>
           </NavLink>
           <NavLink to="/settings">
             <span className="nav-icon">⚙</span>

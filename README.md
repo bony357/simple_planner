@@ -48,7 +48,13 @@ przeglądarce. Używaj wyłącznie na własnym urządzeniu i ogranicz klucze
 5. Skopiuj Client ID do **Ustawienia → Konto Google → Google OAuth Client ID**.
 6. Włącz *Synchronizuj z Google Calendar* i/lub użyj *Eksportuj do Sheets*.
 
-Zakresy OAuth: `calendar.events`, `spreadsheets`.
+Zakresy OAuth: `calendar.events` (zapis), `calendar.readonly` (lista kalendarzy
+i podgląd innych kalendarzy), `spreadsheets`.
+
+**Wiele kalendarzy:** w Ustawieniach kliknij *Pobierz kalendarze konta*, wybierz
+jeden **kalendarz zapisu** (tylko do niego aplikacja zapisuje) oraz dowolną liczbę
+**kalendarzy do podglądu** (tylko odczyt — pokazywane w planie dnia/tygodnia w
+kolorze danego kalendarza, nieedytowalne).
 
 ### Gemini
 

@@ -1,18 +1,26 @@
 import Dexie, { type Table } from 'dexie'
-import type { Task, Category, CalendarEvent } from './types'
+import type { Task, Category, CalendarEvent, RecurringTemplate } from './types'
 
 export class PlannerDB extends Dexie {
   tasks!: Table<Task, string>
   categories!: Table<Category, string>
   events!: Table<CalendarEvent, string>
+  recurringTemplates!: Table<RecurringTemplate, string>
 
   constructor() {
     super('simple-planner')
+    // Indeksy używane w zapytaniach (nie wszystkie pola).
     this.version(1).stores({
-      // Indeksy używane w zapytaniach (nie wszystkie pola).
       tasks: 'id, status, categoryId, dueDate, order',
       categories: 'id, order',
       events: 'id, taskId, start, source, googleEventId, syncState',
+    })
+    // v2: szablony cykliczne + indeks templateId na zadaniach (deduplikacja instancji).
+    this.version(2).stores({
+      tasks: 'id, status, categoryId, dueDate, order, templateId',
+      categories: 'id, order',
+      events: 'id, taskId, start, source, googleEventId, syncState',
+      recurringTemplates: 'id, active, order',
     })
   }
 }

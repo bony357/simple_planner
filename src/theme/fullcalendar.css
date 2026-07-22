@@ -53,6 +53,16 @@
   text-decoration: line-through;
 }
 
+/* Wydarzenia z kalendarzy tylko do podglądu — bez uchwytów, przyćmione, kursor domyślny. */
+.fc-event.fc-event-readonly {
+  cursor: default;
+  opacity: 0.9;
+  border-style: dashed !important;
+}
+.fc-event.fc-event-readonly .fc-event-resizer {
+  display: none;
+}
+
 /* Uchwyt do rozciągania — większy dla palca */
 .fc .fc-timegrid-event .fc-event-resizer {
   height: 14px;

@@ -1,13 +1,18 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ThemeName } from '../db/types'
+import type { CalendarInfo, ThemeName } from '../db/types'
 
 interface SettingsState {
   theme: ThemeName
   googleClientId: string
   geminiApiKey: string
   geminiModel: string
+  /** Kalendarz, do którego zapisujemy (jedyny zapisywalny). */
   calendarId: string
+  /** Dodatkowe kalendarze pokazywane tylko do podglądu. */
+  readCalendarIds: string[]
+  /** Pobrana lista kalendarzy konta (do wyboru w UI). */
+  availableCalendars: CalendarInfo[]
   sheetsId: string
   syncCalendar: boolean
   syncSheets: boolean
@@ -26,6 +31,8 @@ export const useSettings = create<SettingsState>()(
       geminiApiKey: '',
       geminiModel: 'gemini-flash-latest',
       calendarId: 'primary',
+      readCalendarIds: [],
+      availableCalendars: [],
       sheetsId: '',
       syncCalendar: false,
       syncSheets: false,

@@ -63,6 +63,11 @@ async function pushLocal(): Promise<number> {
   let firstError: unknown = null
   for (const ev of pending) {
     try {
+      // Kalendarze tylko do podglądu: nigdy nie zapisujemy do Google.
+      if (ev.readOnly) {
+        if (ev.syncState === 'deleted') await db.events.delete(ev.id)
+        continue
+      }
       if (ev.syncState === 'deleted') {
         if (ev.googleEventId) await removeEvent(ev.googleEventId)
         await db.events.delete(ev.id)
@@ -102,39 +107,57 @@ async function pullRemote(): Promise<number> {
   const timeMin = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
   const timeMax = new Date(now.getTime() + 14 * 86400000).toISOString()
 
-  const remote = await listEvents(timeMin, timeMax)
+  const { calendarId, readCalendarIds, availableCalendars } = useSettings.getState()
+  const writeCal = calendarId || 'primary'
+  // Kalendarze do pobrania: zapisywalny + wybrane do podglądu (bez duplikatów).
+  const calendars = [...new Set([writeCal, ...readCalendarIds])]
+  const colorOf = (id: string) =>
+    availableCalendars.find((c) => c.id === id)?.backgroundColor
+
   const remoteIds = new Set<string>()
   let pulled = 0
 
-  for (const r of remote) {
-    const start = r.start.dateTime
-    const end = r.end.dateTime
-    if (!start || !end) continue // pomijamy wydarzenia całodniowe
-    remoteIds.add(r.id)
+  for (const calId of calendars) {
+    const readOnly = calId !== writeCal
+    const remote = await listEvents(timeMin, timeMax, calId)
+    for (const r of remote) {
+      const start = r.start.dateTime
+      const end = r.end.dateTime
+      if (!start || !end) continue // pomijamy wydarzenia całodniowe
+      remoteIds.add(r.id)
+      // Kalendarze podglądu kolorujemy wg koloru kalendarza (rozróżnienie źródła).
+      const color = readOnly ? colorOf(calId) : undefined
 
-    const existing = await db.events.where('googleEventId').equals(r.id).first()
-    if (existing) {
-      // Local-first: nie nadpisujemy lokalnych zmian oczekujących na push.
-      if (existing.syncState === 'synced') {
-        await db.events.update(existing.id, {
+      const existing = await db.events.where('googleEventId').equals(r.id).first()
+      if (existing) {
+        // Local-first: nie nadpisujemy lokalnych zmian oczekujących na push.
+        if (existing.syncState === 'synced') {
+          await db.events.update(existing.id, {
+            title: r.summary || '(bez tytułu)',
+            start,
+            end,
+            calendarId: calId,
+            readOnly,
+            color: color ?? existing.color,
+          })
+        }
+      } else {
+        const ev: CalendarEvent = {
+          id: newId(),
           title: r.summary || '(bez tytułu)',
           start,
           end,
-        })
+          color,
+          source: 'google',
+          googleEventId: r.id,
+          calendarId: calId,
+          readOnly,
+          syncState: 'synced',
+          updatedAt: new Date().toISOString(),
+        }
+        await db.events.add(ev)
+        pulled++
       }
-    } else {
-      const ev: CalendarEvent = {
-        id: newId(),
-        title: r.summary || '(bez tytułu)',
-        start,
-        end,
-        source: 'google',
-        googleEventId: r.id,
-        syncState: 'synced',
-        updatedAt: new Date().toISOString(),
-      }
-      await db.events.add(ev)
-      pulled++
     }
   }
 

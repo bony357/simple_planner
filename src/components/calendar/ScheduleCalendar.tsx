@@ -15,7 +15,16 @@ import { db } from '../../db/dexie'
 import { addEvent, deleteEvent, updateEvent } from '../../db/repo'
 import type { CalendarEvent } from '../../db/types'
 import { addMinutes, toDateKey } from '../../lib/dates'
+import { useSettings } from '../../store/useSettings'
 import Sheet from '../common/Sheet'
+
+function calendarName(id?: string): string {
+  if (!id) return 'inny kalendarz'
+  const found = useSettings
+    .getState()
+    .availableCalendars.find((c) => c.id === id)
+  return found?.summary ?? id
+}
 
 export type CalendarView = 'timeGridDay' | 'timeGridWeek'
 
@@ -87,7 +96,12 @@ export default function ScheduleCalendar({
         end: e.end,
         backgroundColor: e.color || undefined,
         borderColor: e.color || undefined,
-        classNames: e.taskId ? ['fc-event-task'] : [],
+        // Kalendarze podglądu są nieedytowalne (bez drag/resize).
+        editable: !e.readOnly,
+        classNames: [
+          ...(e.taskId ? ['fc-event-task'] : []),
+          ...(e.readOnly ? ['fc-event-readonly'] : []),
+        ],
         extendedProps: { taskId: e.taskId },
       })),
     [events],
@@ -152,7 +166,9 @@ export default function ScheduleCalendar({
         dayHeaders={view === 'timeGridWeek'}
         dayHeaderFormat={{ weekday: 'short', day: 'numeric' }}
         allDaySlot={false}
-        height="auto"
+        /* height 100% → FullCalendar sam zarządza przewijaniem, więc scrollTime
+           faktycznie przewija oś do aktualnej godziny (przy height:auto był ignorowany). */
+        height="100%"
         expandRows
         nowIndicator
         editable
@@ -188,15 +204,23 @@ export default function ScheduleCalendar({
         {selected && (
           <>
             <p className="muted">{timeRange(selected.start, selected.end)}</p>
-            <button
-              className="btn btn-danger btn-block"
-              onClick={async () => {
-                await deleteEvent(selected.id)
-                setSelected(null)
-              }}
-            >
-              Usuń z planu
-            </button>
+            {selected.readOnly ? (
+              <p className="muted">
+                Podgląd z kalendarza:{' '}
+                <b>{calendarName(selected.calendarId)}</b>. Ten kalendarz jest tylko
+                do odczytu — edytuj go w Google Calendar.
+              </p>
+            ) : (
+              <button
+                className="btn btn-danger btn-block"
+                onClick={async () => {
+                  await deleteEvent(selected.id)
+                  setSelected(null)
+                }}
+              >
+                Usuń z planu
+              </button>
+            )}
           </>
         )}
       </Sheet>

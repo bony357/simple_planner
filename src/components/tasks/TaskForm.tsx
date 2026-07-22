@@ -3,7 +3,6 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db/dexie'
 import { addTask, deleteTask, updateTask } from '../../db/repo'
 import type { Task } from '../../db/types'
-import { RECURRENCE_PRESETS } from '../../services/recurrence'
 
 interface TaskFormProps {
   task?: Task
@@ -26,7 +25,6 @@ export default function TaskForm({ task, defaultDueDate, onDone }: TaskFormProps
   const [estimatedMinutes, setEstimatedMinutes] = useState(
     task?.estimatedMinutes ? String(task.estimatedMinutes) : '',
   )
-  const [recurrenceRule, setRecurrenceRule] = useState(task?.recurrenceRule ?? '')
 
   const save = async () => {
     const t = title.trim()
@@ -37,7 +35,6 @@ export default function TaskForm({ task, defaultDueDate, onDone }: TaskFormProps
       notes: notes.trim() || undefined,
       dueDate: dueDate || undefined,
       estimatedMinutes: estimatedMinutes ? Number(estimatedMinutes) : undefined,
-      recurrenceRule: recurrenceRule || undefined,
     }
     if (task) await updateTask(task.id, payload)
     else await addTask(payload)
@@ -97,21 +94,6 @@ export default function TaskForm({ task, defaultDueDate, onDone }: TaskFormProps
             onChange={(e) => setEstimatedMinutes(e.target.value)}
           />
         </div>
-      </div>
-
-      <div className="field">
-        <label>Powtarzalność</label>
-        <select
-          className="select"
-          value={recurrenceRule}
-          onChange={(e) => setRecurrenceRule(e.target.value)}
-        >
-          {RECURRENCE_PRESETS.map((p) => (
-            <option key={p.rule} value={p.rule}>
-              {p.label}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div className="field">

@@ -33,12 +33,12 @@
   text-transform: capitalize;
 }
 
-/* Przewijalny obszar osi czasu z widocznymi pustymi slotami. */
+/* Obszar osi czasu — przewijaniem zarządza wewnętrznie FullCalendar (height:100%),
+   dzięki czemu startuje przewinięty do aktualnej godziny. */
 .calWrap {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
   padding: var(--gap) var(--gap-lg);
 }
 

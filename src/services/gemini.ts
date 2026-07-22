@@ -1,7 +1,7 @@
 import { db } from '../db/dexie'
 import { useSettings } from '../store/useSettings'
 import { todayISO } from '../lib/dates'
-import { upcomingRecurring } from './recurrence'
+import { describeRule, upcomingTemplates } from './recurrence'
 
 /**
  * Pobierz listę modeli dostępnych dla danego klucza API, które wspierają
@@ -91,9 +91,10 @@ Zasady:
 
 /** Zbuduj kontekst dla modelu z bieżącego stanu bazy. */
 async function buildContext(): Promise<string> {
-  const [tasks, categories] = await Promise.all([
+  const [tasks, categories, templates] = await Promise.all([
     db.tasks.toArray(),
     db.categories.toArray(),
+    db.recurringTemplates.toArray(),
   ])
   const today = todayISO()
   const catName = (id?: string) =>
@@ -105,8 +106,8 @@ async function buildContext(): Promise<string> {
   const doneRecently = tasks
     .filter((t) => t.status === 'done' && t.completedAt && t.completedAt.slice(0, 10) >= addDays(today, -7))
     .map((t) => `- "${t.title}" (ukończone ${t.completedAt?.slice(0, 10)})`)
-  const recurring = upcomingRecurring(tasks, new Date(), 14).map(
-    (r) => `- "${r.task.title}" wypada ${r.nextDate}`,
+  const recurring = upcomingTemplates(templates, today, 14).map(
+    (r) => `- "${r.template.title}" (${describeRule(r.template.rule)}) wypada ${r.nextDate}`,
   )
 
   return [

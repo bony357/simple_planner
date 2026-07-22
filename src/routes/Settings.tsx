@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useSettings } from '../store/useSettings'
 import { getAccessToken, isSignedIn, signOut } from '../services/google/auth'
 import { runSync } from '../services/google/sync'
+import { listCalendars } from '../services/google/calendar'
 import { exportToSheets, importFromSheets } from '../services/google/sheets'
 import { listGeminiModels } from '../services/gemini'
+import type { CalendarInfo } from '../db/types'
 import { fmtTime } from '../lib/dates'
 
 export default function Settings() {
@@ -91,14 +93,89 @@ export default function Settings() {
             />
           </div>
           <div className="field">
-            <label>ID kalendarza</label>
-            <input
-              className="input"
-              placeholder="primary"
-              value={s.calendarId}
-              onChange={(e) => s.update({ calendarId: e.target.value })}
-            />
+            <label>Kalendarz zapisu (jedyny zapisywalny)</label>
+            {s.availableCalendars.length > 0 ? (
+              <select
+                className="select"
+                value={s.calendarId}
+                onChange={(e) => s.update({ calendarId: e.target.value })}
+              >
+                {mergeCalendarOptions(s.availableCalendars, s.calendarId).map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.summary}
+                    {c.accessRole && c.accessRole !== 'owner' && c.accessRole !== 'writer'
+                      ? ' (brak prawa zapisu!)'
+                      : ''}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className="input"
+                placeholder="primary"
+                value={s.calendarId}
+                onChange={(e) => s.update({ calendarId: e.target.value })}
+              />
+            )}
           </div>
+
+          <button
+            className="btn"
+            disabled={busy !== null}
+            onClick={() =>
+              withBusy(
+                'cals',
+                async () => {
+                  const cals = await listCalendars()
+                  s.update({ availableCalendars: cals })
+                },
+                'Pobrano listę kalendarzy.',
+              )
+            }
+          >
+            {busy === 'cals' ? 'Pobieram…' : 'Pobierz kalendarze konta'}
+          </button>
+
+          {s.availableCalendars.length > 0 && (
+            <div className="field">
+              <label>Kalendarze do podglądu (tylko odczyt)</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {s.availableCalendars
+                  .filter((c) => c.id !== s.calendarId)
+                  .map((c) => {
+                    const checked = s.readCalendarIds.includes(c.id)
+                    return (
+                      <label key={c.id} className="row" style={{ gap: 10 }}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          style={{ width: 22, height: 22 }}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...s.readCalendarIds, c.id]
+                              : s.readCalendarIds.filter((id) => id !== c.id)
+                            s.update({ readCalendarIds: next })
+                          }}
+                        />
+                        {c.backgroundColor && (
+                          <span
+                            style={{
+                              width: 14,
+                              height: 14,
+                              borderRadius: 4,
+                              background: c.backgroundColor,
+                              border: '1px solid var(--border-strong)',
+                            }}
+                          />
+                        )}
+                        {c.summary}
+                      </label>
+                    )
+                  })}
+              </div>
+            </div>
+          )}
+
           <label className="row" style={{ gap: 10 }}>
             <input
               type="checkbox"
@@ -241,6 +318,15 @@ export default function Settings() {
       )}
     </div>
   )
+}
+
+/** Opcje kalendarza zapisu: pobrane + bieżący (gdyby nie było go na liście). */
+function mergeCalendarOptions(
+  cals: CalendarInfo[],
+  current: string,
+): CalendarInfo[] {
+  if (cals.some((c) => c.id === current)) return cals
+  return [{ id: current, summary: current }, ...cals]
 }
 
 /** Lista opcji modelu: pobrane z API (jeśli są) + bezpieczne aliasy + bieżący wybór. */

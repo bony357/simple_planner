@@ -13,7 +13,7 @@ interface TaskItemProps {
 
 export default function TaskItem({ task, category, onEdit, draggable }: TaskItemProps) {
   const done = task.status === 'done'
-  const recur = recurrenceLabel(task.recurrenceRule)
+  const recur = task.templateId ? 'cykliczne' : recurrenceLabel(task.recurrenceRule)
 
   return (
     <div

@@ -27,7 +27,10 @@ declare global {
 }
 
 export const GOOGLE_SCOPES = [
+  // events → zapis/edycja wydarzeń w kalendarzu zapisu
   'https://www.googleapis.com/auth/calendar.events',
+  // readonly → lista kalendarzy (calendarList) + podgląd wydarzeń z innych kalendarzy
+  'https://www.googleapis.com/auth/calendar.readonly',
   'https://www.googleapis.com/auth/spreadsheets',
 ].join(' ')
 

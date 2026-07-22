@@ -4,10 +4,11 @@ import { registerSW } from 'virtual:pwa-register'
 import App from './App'
 import { ensureSeeded } from './db/dexie'
 import { applyStoredTheme } from './store/useSettings'
+import { materializeDueTasks } from './services/recurring'
 import './theme/global.css'
 
 applyStoredTheme()
-void ensureSeeded()
+void ensureSeeded().then(() => materializeDueTasks())
 
 registerSW({ immediate: true })
 
