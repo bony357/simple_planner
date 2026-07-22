@@ -74,4 +74,4 @@ Zakresy OAuth: `calendar.events`, `spreadsheets`.
   [src/components/calendar/ScheduleCalendar.tsx](src/components/calendar/ScheduleCalendar.tsx).
 - **Integracje:** [src/services/google](src/services/google) (auth/calendar/sheets/sync),
   [src/services/gemini.ts](src/services/gemini.ts), [src/services/recurrence.ts](src/services/recurrence.ts).
-- **Motywy:** zmienne CSS w [src/theme/tokens.css](src/theme/tokens.css).
+- **Motywy:** zmienne CSS w [src/theme/tokens.css](src/theme/tokens.css). 
