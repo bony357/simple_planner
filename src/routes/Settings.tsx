@@ -3,12 +3,14 @@ import { useSettings } from '../store/useSettings'
 import { getAccessToken, isSignedIn, signOut } from '../services/google/auth'
 import { runSync } from '../services/google/sync'
 import { exportToSheets, importFromSheets } from '../services/google/sheets'
+import { listGeminiModels } from '../services/gemini'
 import { fmtTime } from '../lib/dates'
 
 export default function Settings() {
   const s = useSettings()
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
+  const [models, setModels] = useState<string[]>([])
 
   const withBusy = async (key: string, fn: () => Promise<void>, ok: string) => {
     setBusy(key)
@@ -22,6 +24,31 @@ export default function Settings() {
       setBusy(null)
     }
   }
+
+  const doSync = () =>
+    withBusy(
+      'sync',
+      async () => {
+        const r = await runSync(true)
+        setMsg(
+          r
+            ? `Synchronizacja OK — wysłano ${r.pushed}, pobrano ${r.pulled}.`
+            : 'Synchronizacja pominięta (włącz przełącznik powyżej).',
+        )
+      },
+      'Synchronizacja zakończona.',
+    )
+
+  const loadModels = () =>
+    withBusy(
+      'models',
+      async () => {
+        const list = await listGeminiModels()
+        setModels(list)
+        setMsg(`Znaleziono ${list.length} modeli. Wybierz z listy.`)
+      },
+      'Pobrano modele.',
+    )
 
   return (
     <div className="page">
@@ -93,21 +120,23 @@ export default function Settings() {
             >
               {isSignedIn() ? 'Zalogowano ✓' : 'Zaloguj do Google'}
             </button>
-            <button
-              className="btn"
-              disabled={busy !== null}
-              onClick={() =>
-                withBusy('sync', () => runSync(true), 'Synchronizacja zakończona.')
-              }
-            >
+            <button className="btn" disabled={busy !== null} onClick={doSync}>
               {busy === 'sync' ? 'Synchronizuję…' : 'Synchronizuj teraz'}
             </button>
             <button className="btn" onClick={() => { signOut(); setMsg('Wylogowano.') }}>
               Wyloguj
             </button>
           </div>
+          <p className="muted" style={{ fontSize: 'var(--font-size-sm)' }}>
+            Do Google Calendar trafiają tylko <b>wydarzenia</b> (zadania
+            przeciągnięte na oś czasu lub utworzone w kalendarzu) — same wpisy z
+            listy to-do nie. Wymagane: zalogowanie i włączony przełącznik powyżej.
+          </p>
           {s.lastSyncAt && (
             <p className="muted">Ostatnia synchronizacja: {fmtTime(s.lastSyncAt)}</p>
+          )}
+          {s.lastSyncError && (
+            <p style={{ color: 'var(--danger)' }}>Błąd sync: {s.lastSyncError}</p>
           )}
         </div>
       </section>
@@ -164,15 +193,31 @@ export default function Settings() {
           </div>
           <div className="field">
             <label>Model</label>
-            <select
-              className="select"
-              value={s.geminiModel}
-              onChange={(e) => s.update({ geminiModel: e.target.value })}
-            >
-              <option value="gemini-2.5-flash">gemini-2.5-flash</option>
-              <option value="gemini-2.5-pro">gemini-2.5-pro</option>
-              <option value="gemini-2.0-flash">gemini-2.0-flash</option>
-            </select>
+            <div className="row">
+              <select
+                className="select"
+                value={s.geminiModel}
+                onChange={(e) => s.update({ geminiModel: e.target.value })}
+              >
+                {/* Modele pobrane z API (jeśli są) + bieżący + bezpieczne aliasy */}
+                {mergeModelOptions(models, s.geminiModel).map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="btn"
+                disabled={busy !== null}
+                onClick={loadModels}
+                title="Pobierz listę modeli dostępnych dla Twojego klucza"
+              >
+                {busy === 'models' ? '…' : 'Pobierz modele'}
+              </button>
+            </div>
+            <span className="muted" style={{ fontSize: 'var(--font-size-sm)' }}>
+              Aliasy „-latest" są najbezpieczniejsze — zawsze wskazują aktualny model.
+            </span>
           </div>
         </div>
       </section>
@@ -196,4 +241,17 @@ export default function Settings() {
       )}
     </div>
   )
+}
+
+/** Lista opcji modelu: pobrane z API (jeśli są) + bezpieczne aliasy + bieżący wybór. */
+function mergeModelOptions(fetched: string[], current: string): string[] {
+  const fallback = [
+    'gemini-flash-latest',
+    'gemini-pro-latest',
+    'gemini-2.5-flash',
+    'gemini-2.5-pro',
+    'gemini-2.0-flash',
+  ]
+  const base = fetched.length ? fetched : fallback
+  return Array.from(new Set([current, ...base].filter(Boolean)))
 }

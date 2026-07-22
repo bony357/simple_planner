@@ -3,6 +3,37 @@ import { useSettings } from '../store/useSettings'
 import { todayISO } from '../lib/dates'
 import { upcomingRecurring } from './recurrence'
 
+/**
+ * Pobierz listę modeli dostępnych dla danego klucza API, które wspierają
+ * generowanie treści (generateContent). Pozwala wybrać poprawny model w UI.
+ */
+export async function listGeminiModels(): Promise<string[]> {
+  const { geminiApiKey } = useSettings.getState()
+  if (!geminiApiKey.trim()) {
+    throw new Error('Brak klucza Gemini API — uzupełnij w Ustawieniach.')
+  }
+  const { GoogleGenAI } = await import('@google/genai')
+  const ai = new GoogleGenAI({ apiKey: geminiApiKey.trim() })
+
+  const names: string[] = []
+  // queryBase: true → modele bazowe (dostępne do użycia), nie strojone.
+  const pager = await ai.models.list({ config: { queryBase: true } })
+  for await (const m of pager) {
+    const model = m as {
+      name?: string
+      supportedActions?: string[]
+      supportedGenerationMethods?: string[]
+    }
+    const actions = model.supportedActions ?? model.supportedGenerationMethods
+    // Bez listy metod przyjmujemy, że model nadaje się do generowania.
+    if (!actions || actions.includes('generateContent')) {
+      const name = (model.name ?? '').replace(/^models\//, '')
+      if (name) names.push(name)
+    }
+  }
+  return names.sort()
+}
+
 export type SuggestionAction =
   | 'addTask'
   | 'modifyTask'

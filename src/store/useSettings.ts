@@ -12,6 +12,7 @@ interface SettingsState {
   syncCalendar: boolean
   syncSheets: boolean
   lastSyncAt?: string
+  lastSyncError?: string
 
   setTheme: (t: ThemeName) => void
   update: (patch: Partial<SettingsState>) => void
@@ -23,7 +24,7 @@ export const useSettings = create<SettingsState>()(
       theme: 'color',
       googleClientId: '',
       geminiApiKey: '',
-      geminiModel: 'gemini-2.5-flash',
+      geminiModel: 'gemini-flash-latest',
       calendarId: 'primary',
       sheetsId: '',
       syncCalendar: false,

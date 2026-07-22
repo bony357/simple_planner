@@ -1,5 +1,6 @@
 import { db, newId } from './dexie'
 import type { Task, Category, CalendarEvent } from './types'
+import { scheduleSync } from '../services/google/sync'
 
 const nowIso = () => new Date().toISOString()
 
@@ -94,6 +95,7 @@ export async function addEvent(
     updatedAt: nowIso(),
   }
   await db.events.add(event)
+  scheduleSync()
   return event
 }
 
@@ -104,6 +106,7 @@ export async function updateEvent(id: string, patch: Partial<CalendarEvent>): Pr
     // Każda lokalna zmiana wymaga ponownej synchronizacji.
     syncState: patch.syncState ?? 'pending',
   })
+  scheduleSync()
 }
 
 export async function deleteEvent(id: string): Promise<void> {
@@ -115,4 +118,5 @@ export async function deleteEvent(id: string): Promise<void> {
   } else {
     await db.events.delete(id)
   }
+  scheduleSync()
 }
