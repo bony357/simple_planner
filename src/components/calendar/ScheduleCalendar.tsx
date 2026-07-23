@@ -152,12 +152,22 @@ export default function ScheduleCalendar({
     if (ev) setSelected(ev)
   }
 
+  // Przy krótkim przeciągnięciu (np. 15 min) FullCalendar odpala zarówno `select`,
+  // jak i zaraz po nim `dateClick` — ten drugi nadpisywał zakres domyślnymi 30 min.
+  // Flaga blokuje `dateClick` tuż po zaznaczeniu zakresu.
+  const justSelected = useRef(false)
+
   // Zaznaczenie zakresu (przeciągnięcie po pustych slotach) → nowe wydarzenie.
   const onSelect = (arg: DateSelectArg) => {
+    justSelected.current = true
     setCreating({ start: arg.start.toISOString(), end: arg.end.toISOString() })
   }
   // Pojedyncze kliknięcie/tapnięcie w pusty slot → domyślnie 30 min.
   const onDateClick = (arg: DateClickArg) => {
+    if (justSelected.current) {
+      justSelected.current = false
+      return
+    }
     const start = arg.date.toISOString()
     setCreating({ start, end: addMinutes(start, 30) })
   }
