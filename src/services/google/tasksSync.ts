@@ -84,6 +84,36 @@ function decodeTitle(
   return { title: raw }
 }
 
+/* --------------------------- Znacznik źródła --------------------------- */
+
+/**
+ * Ukryty znacznik dopisywany do notatek zadania w Google Tasks, dzięki któremu
+ * id źródłowego wydarzenia kalendarza (`sourceEventId`) przetrwa round-trip
+ * przez Google. Umożliwia to drugiemu urządzeniu rozpoznanie, że dane zadanie
+ * zostało już zmaterializowane z kalendarza — i uniknięcie duplikatu.
+ */
+const SRC_MARKER_RE = /\n*\[planner:src=([^\]\n]+)\]\s*$/
+
+/** Notatki do wysłania do Google: notatki użytkownika + ewentualny znacznik. */
+function encodeNotes(task: Task): string | undefined {
+  if (!task.sourceEventId) return task.notes
+  const base = (task.notes ?? '').replace(SRC_MARKER_RE, '').trimEnd()
+  const marker = `[planner:src=${task.sourceEventId}]`
+  return base ? `${base}\n\n${marker}` : marker
+}
+
+/** Rozbij notatki Google na notatki użytkownika + `sourceEventId` (jeśli jest). */
+function decodeNotes(raw?: string): {
+  notes?: string
+  sourceEventId?: string
+} {
+  if (!raw) return {}
+  const m = raw.match(SRC_MARKER_RE)
+  if (!m) return { notes: raw }
+  const notes = raw.replace(SRC_MARKER_RE, '').trimEnd()
+  return { notes: notes || undefined, sourceEventId: m[1] }
+}
+
 /* ---------------------------- Mapowanie pól ---------------------------- */
 
 function dueFromDate(dueDate?: string): string | undefined {
@@ -97,7 +127,7 @@ function dateFromDue(due?: string): string | undefined {
 function payloadFor(task: Task, cats: Category[]): TaskPayload {
   return {
     title: encodeTitle(task, cats),
-    notes: task.notes,
+    notes: encodeNotes(task),
     due: dueFromDate(task.dueDate),
     status: task.status === 'done' ? 'completed' : 'needsAction',
     completed: task.completedAt,
@@ -142,6 +172,34 @@ async function pushLocalTasks(cats: Category[]): Promise<number> {
 
 /* ------------------------------- Pull -------------------------------- */
 
+/**
+ * Znajdź lokalne zadanie reprezentujące ten sam element co rekord Google, ale
+ * bez dowiązania `googleTaskId`. Zapobiega duplikatom przy synchronizacji tego
+ * samego konta na wielu urządzeniach:
+ *   1. po `sourceEventId` (opcja 1) — zadania zmaterializowane z kalendarza,
+ *   2. po tytule + terminie (opcja 3) — to samo zadanie wpisane ręcznie na
+ *      dwóch urządzeniach, zanim którekolwiek zsynchronizowało.
+ * Dopasowujemy wyłącznie zadania bez `googleTaskId`, by nie „przejąć" zadania
+ * już powiązanego z innym rekordem Google.
+ */
+async function findAdoptableLocal(
+  sourceEventId: string | undefined,
+  title: string,
+  dueDate: string | undefined,
+): Promise<Task | undefined> {
+  if (sourceEventId) {
+    const bySrc = await db.tasks
+      .where('sourceEventId')
+      .equals(sourceEventId)
+      .filter((t) => !t.googleTaskId)
+      .first()
+    if (bySrc) return bySrc
+  }
+  return db.tasks
+    .filter((t) => !t.googleTaskId && t.title === title && t.dueDate === dueDate)
+    .first()
+}
+
 async function pullRemoteTasks(cats: Category[]): Promise<number> {
   const remote = await listTasks()
   const remoteIds = new Set<string>()
@@ -155,6 +213,7 @@ async function pullRemoteTasks(cats: Category[]): Promise<number> {
     if (r.deleted) continue
     remoteIds.add(r.id)
     const { title, categoryId } = decodeTitle(r.title ?? '(bez tytułu)', cats)
+    const { notes, sourceEventId } = decodeNotes(r.notes)
     const status = r.status === 'completed' ? 'done' : 'todo'
     const dueDate = dateFromDue(r.due)
 
@@ -168,24 +227,52 @@ async function pullRemoteTasks(cats: Category[]): Promise<number> {
           status,
           completedAt: r.completed,
           dueDate,
+          notes,
+          // Uzupełnij znacznik źródłowy, jeśli lokalnie go brak (dedup na przyszłość).
+          sourceEventId: existing.sourceEventId ?? sourceEventId,
         })
       }
-    } else {
-      const task: Task = {
-        id: newId(),
-        title,
-        categoryId,
-        status,
-        createdAt: new Date().toISOString(),
-        completedAt: r.completed,
-        dueDate,
-        googleTaskId: r.id,
-        syncState: 'synced',
-        order: nextOrder++,
-      }
-      await db.tasks.add(task)
-      pulled++
+      continue
     }
+
+    // Brak dowiązania po googleTaskId → zanim utworzymy nowy rekord, spróbuj
+    // dowiązać istniejące lokalne zadanie (dedup wielourządzeniowy).
+    const adopt = await findAdoptableLocal(sourceEventId, title, dueDate)
+    if (adopt) {
+      const patch: Partial<Task> = { googleTaskId: r.id }
+      if (sourceEventId && !adopt.sourceEventId) patch.sourceEventId = sourceEventId
+      // Local-first: gdy lokalna kopia ma niewypchnięte zmiany, zachowujemy jej
+      // treść — dowiązujemy tylko id, a najbliższy push wyśle wersję lokalną.
+      // (Zadanie bez googleTaskId jest z natury `pending`, więc zwykle tędy.)
+      if (adopt.syncState !== 'pending') {
+        patch.title = title
+        patch.categoryId = categoryId
+        patch.status = status
+        patch.completedAt = r.completed
+        patch.dueDate = dueDate
+        patch.notes = notes
+        patch.syncState = 'synced'
+      }
+      await db.tasks.update(adopt.id, patch)
+      continue
+    }
+
+    const task: Task = {
+      id: newId(),
+      title,
+      notes,
+      categoryId,
+      status,
+      createdAt: new Date().toISOString(),
+      completedAt: r.completed,
+      dueDate,
+      googleTaskId: r.id,
+      sourceEventId,
+      syncState: 'synced',
+      order: nextOrder++,
+    }
+    await db.tasks.add(task)
+    pulled++
   }
 
   // Usuń lokalne kopie zadań Google, które zniknęły zdalnie.
