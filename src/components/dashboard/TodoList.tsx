@@ -3,8 +3,8 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db/dexie'
 import { addTask, updateTask } from '../../db/repo'
 import type { Task } from '../../db/types'
-import { fmtDate, todayISO } from '../../lib/dates'
-import { groupByCategory } from '../../lib/grouping'
+import { fmtDate, fmtTime, todayISO } from '../../lib/dates'
+import { groupByCategory, groupByDay } from '../../lib/grouping'
 import TaskItem from '../tasks/TaskItem'
 import TaskForm from '../tasks/TaskForm'
 import Sheet from '../common/Sheet'
@@ -47,14 +47,54 @@ export default function TodoList() {
   const [showAdd, setShowAdd] = useState(false)
   const [showOverdue, setShowOverdue] = useState(false)
 
+  // Godziny rozpoczęcia zadań z kalendarza: wg powiązania taskId (przeciągnięte)
+  // lub googleEventId == sourceEventId (zmaterializowane z kalendarza).
+  const events =
+    useLiveQuery(() => db.events.toArray(), [], []) ?? []
+  const { startByTask, startByGoogleEvent } = useMemo(() => {
+    const startByTask = new Map<string, string>()
+    const startByGoogleEvent = new Map<string, string>()
+    for (const e of events) {
+      if (e.syncState === 'deleted') continue
+      if (e.taskId) {
+        const cur = startByTask.get(e.taskId)
+        if (!cur || e.start < cur) startByTask.set(e.taskId, e.start)
+      }
+      if (e.googleEventId) {
+        const cur = startByGoogleEvent.get(e.googleEventId)
+        if (!cur || e.start < cur) startByGoogleEvent.set(e.googleEventId, e.start)
+      }
+    }
+    return { startByTask, startByGoogleEvent }
+  }, [events])
+
+  const startFor = (t: Task): string | undefined =>
+    startByTask.get(t.id) ??
+    (t.sourceEventId ? startByGoogleEvent.get(t.sourceEventId) : undefined)
+
   const catById = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),
     [categories],
   )
+  // Grupy wg kategorii; wewnątrz sortuj po godzinie rozpoczęcia, bez godziny na końcu.
   const groups = useMemo(
-    () => groupByCategory(tasks, categories),
-    [tasks, categories],
+    () =>
+      groupByCategory(tasks, categories).map((g) => ({
+        ...g,
+        tasks: [...g.tasks].sort((a, b) => {
+          const sa = startFor(a)
+          const sb = startFor(b)
+          if (sa && sb) return sa < sb ? -1 : sa > sb ? 1 : 0
+          if (sa) return -1
+          if (sb) return 1
+          return a.order - b.order
+        }),
+      })),
+    [tasks, categories, startByTask, startByGoogleEvent],
   )
+
+  const overdueGroups = useMemo(() => groupByDay(overdue), [overdue])
+  const upcomingGroups = useMemo(() => groupByDay(upcoming), [upcoming])
 
   const quickAdd = async () => {
     const t = quick.trim()
@@ -121,6 +161,10 @@ export default function TodoList() {
                   category={t.categoryId ? catById.get(t.categoryId) : undefined}
                   onEdit={setEditing}
                   draggable
+                  startTime={(() => {
+                    const s = startFor(t)
+                    return s ? fmtTime(s) : undefined
+                  })()}
                 />
               ))}
             </div>
@@ -156,18 +200,27 @@ export default function TodoList() {
         <div className={styles.sheetSection}>
           <div className={styles.sheetHeading}>Niedokończone z poprzednich dni</div>
           {overdue.length === 0 && <p className="empty">Nic zaległego 🎉</p>}
-          {overdue.map((t) => (
-            <div key={t.id} className="row">
-              <div style={{ flex: 1 }}>
-                <TaskItem
-                  task={t}
-                  category={t.categoryId ? catById.get(t.categoryId) : undefined}
-                />
-                <span className={styles.due}>{fmtDate(t.dueDate!)}</span>
-              </div>
-              <button className="btn btn-primary" onClick={() => pickOverdue(t)}>
-                Na dziś
-              </button>
+          {overdueGroups.map((grp) => (
+            <div key={grp.dateKey} className={styles.dayGroup}>
+              <div className={styles.dayHeading}>{fmtDate(grp.dateKey!)}</div>
+              {grp.tasks.map((t) => (
+                <div key={t.id} className="row">
+                  <div style={{ flex: 1 }}>
+                    <TaskItem
+                      task={t}
+                      category={
+                        t.categoryId ? catById.get(t.categoryId) : undefined
+                      }
+                    />
+                  </div>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => pickOverdue(t)}
+                  >
+                    Na dziś
+                  </button>
+                </div>
+              ))}
             </div>
           ))}
         </div>
@@ -177,18 +230,27 @@ export default function TodoList() {
           {upcoming.length === 0 && (
             <p className="empty">Brak nadchodzących zadań</p>
           )}
-          {upcoming.map((t) => (
-            <div key={t.id} className="row">
-              <div style={{ flex: 1 }}>
-                <TaskItem
-                  task={t}
-                  category={t.categoryId ? catById.get(t.categoryId) : undefined}
-                />
-                <span className={styles.due}>{fmtDate(t.dueDate!)}</span>
-              </div>
-              <button className="btn btn-primary" onClick={() => pickOverdue(t)}>
-                Na dziś
-              </button>
+          {upcomingGroups.map((grp) => (
+            <div key={grp.dateKey} className={styles.dayGroup}>
+              <div className={styles.dayHeading}>{fmtDate(grp.dateKey!)}</div>
+              {grp.tasks.map((t) => (
+                <div key={t.id} className="row">
+                  <div style={{ flex: 1 }}>
+                    <TaskItem
+                      task={t}
+                      category={
+                        t.categoryId ? catById.get(t.categoryId) : undefined
+                      }
+                    />
+                  </div>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => pickOverdue(t)}
+                  >
+                    Na dziś
+                  </button>
+                </div>
+              ))}
             </div>
           ))}
         </div>

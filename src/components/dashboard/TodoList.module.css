@@ -70,7 +70,17 @@
   letter-spacing: 0.04em;
   color: var(--text-muted);
 }
-.due {
+/* Grupa zadań jednego dnia w arkuszu „Zaległe i nadchodzące". */
+.dayGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dayGroup + .dayGroup {
+  margin-top: 6px;
+}
+.dayHeading {
   font-size: var(--font-size-sm);
+  font-weight: 600;
   color: var(--text-muted);
 }

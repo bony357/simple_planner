@@ -90,10 +90,6 @@ export default function DayPlan({ date }: DayPlanProps) {
       <div className={styles.calWrap}>
         <ScheduleCalendar date={current} view={view} />
       </div>
-      <p className={styles.hint}>
-        Dotknij pusty slot, aby dodać wydarzenie. Przeciągnij zadanie z listy na oś
-        czasu; ciągnij krawędź, aby zmienić czas trwania.
-      </p>
     </section>
   )
 }

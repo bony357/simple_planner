@@ -8,9 +8,17 @@ interface TaskItemProps {
   onEdit?: (t: Task) => void
   /** Włącza atrybuty przeciągania na kalendarz (data-* czytane przez Draggable). */
   draggable?: boolean
+  /** Godzina rozpoczęcia (HH:mm) z kalendarza — pokazywana wyszarzona po prawej. */
+  startTime?: string
 }
 
-export default function TaskItem({ task, category, onEdit, draggable }: TaskItemProps) {
+export default function TaskItem({
+  task,
+  category,
+  onEdit,
+  draggable,
+  startTime,
+}: TaskItemProps) {
   const done = task.status === 'done'
   const fromCalendar = !!task.sourceEventId
 
@@ -51,7 +59,7 @@ export default function TaskItem({ task, category, onEdit, draggable }: TaskItem
         </span>
       </button>
 
-      {draggable && <span className={styles.grip} aria-hidden>⠿</span>}
+      {startTime && <span className={styles.startTime}>{startTime}</span>}
     </div>
   )
 }
