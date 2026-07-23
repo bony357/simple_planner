@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db/dexie'
 import { addTask, updateTask } from '../../db/repo'
 import type { Task } from '../../db/types'
-import { todayISO } from '../../lib/dates'
+import { fmtDate, todayISO } from '../../lib/dates'
 import { groupByCategory } from '../../lib/grouping'
 import TaskItem from '../tasks/TaskItem'
 import TaskForm from '../tasks/TaskForm'
@@ -163,7 +163,7 @@ export default function TodoList() {
                   task={t}
                   category={t.categoryId ? catById.get(t.categoryId) : undefined}
                 />
-                <span className={styles.due}>{t.dueDate}</span>
+                <span className={styles.due}>{fmtDate(t.dueDate!)}</span>
               </div>
               <button className="btn btn-primary" onClick={() => pickOverdue(t)}>
                 Na dziś
@@ -184,7 +184,7 @@ export default function TodoList() {
                   task={t}
                   category={t.categoryId ? catById.get(t.categoryId) : undefined}
                 />
-                <span className={styles.due}>{t.dueDate}</span>
+                <span className={styles.due}>{fmtDate(t.dueDate!)}</span>
               </div>
               <button className="btn btn-primary" onClick={() => pickOverdue(t)}>
                 Na dziś

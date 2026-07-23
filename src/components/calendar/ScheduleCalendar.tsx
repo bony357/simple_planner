@@ -9,7 +9,7 @@ import type {
   EventInput,
 } from '@fullcalendar/core'
 import type { DateClickArg, EventResizeDoneArg } from '@fullcalendar/interaction'
-import { startOfWeek, endOfWeek } from 'date-fns'
+import { startOfWeek, endOfWeek, format } from 'date-fns'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db/dexie'
 import { addEvent, deleteEvent, updateEvent } from '../../db/repo'
@@ -26,7 +26,7 @@ function calendarName(id?: string): string {
   return found?.summary ?? id
 }
 
-export type CalendarView = 'timeGridDay' | 'timeGridWeek'
+export type CalendarView = 'timeGridDay' | 'timeGridThreeDay' | 'timeGridWeek'
 
 interface ScheduleCalendarProps {
   /** Data (YYYY-MM-DD) pokazywanego dnia/tygodnia. */
@@ -39,7 +39,7 @@ export default function ScheduleCalendar({
   date,
   view = 'timeGridDay',
 }: ScheduleCalendarProps) {
-  // Zakres dat do zapytania o wydarzenia (dzień albo cały tydzień).
+  // Zakres dat do zapytania o wydarzenia (dzień / 3 dni / cały tydzień).
   const [rangeStart, rangeEnd] = useMemo(() => {
     const d = new Date(`${date}T00:00:00`)
     if (view === 'timeGridWeek') {
@@ -47,6 +47,9 @@ export default function ScheduleCalendar({
         toDateKey(startOfWeek(d, { weekStartsOn: 1 })),
         toDateKey(endOfWeek(d, { weekStartsOn: 1 })),
       ]
+    }
+    if (view === 'timeGridThreeDay') {
+      return [date, toDateKey(new Date(d.getTime() + 2 * 86400000))]
     }
     return [date, date]
   }, [date, view])
@@ -65,6 +68,12 @@ export default function ScheduleCalendar({
   const [creating, setCreating] = useState<{ start: string; end: string } | null>(
     null,
   )
+
+  // Przesuń widok kalendarza, gdy zmieni się wybrana data (strzałki w DayPlan).
+  const calRef = useRef<FullCalendar | null>(null)
+  useEffect(() => {
+    calRef.current?.getApi().gotoDate(date)
+  }, [date])
 
   // Umożliw przeciąganie elementów listy to-do na kalendarz.
   // Draggable deleguje po selektorze, więc łapie też elementy dodane później.
@@ -157,13 +166,17 @@ export default function ScheduleCalendar({
     <>
       <FullCalendar
         key={view}
+        ref={calRef}
         plugins={[timeGridPlugin, interactionPlugin]}
         initialView={view}
         initialDate={date}
+        views={{
+          timeGridThreeDay: { type: 'timeGrid', duration: { days: 3 } },
+        }}
         firstDay={1}
         headerToolbar={false}
-        dayHeaders={view === 'timeGridWeek'}
-        dayHeaderFormat={{ weekday: 'short', day: 'numeric' }}
+        dayHeaders={view !== 'timeGridDay'}
+        dayHeaderFormat={{ weekday: 'short', day: '2-digit', month: '2-digit' }}
         allDaySlot={false}
         /* height 100% → FullCalendar sam zarządza przewijaniem, więc scrollTime
            faktycznie przewija oś do aktualnej godziny (przy height:auto był ignorowany). */
@@ -283,10 +296,11 @@ function timeRange(startIso: string, endIso: string): string {
   const s = new Date(startIso)
   const e = new Date(endIso)
   const sameDay = s.toDateString() === e.toDateString()
-  const day = s.toLocaleDateString('pl', { weekday: 'long', day: 'numeric', month: 'long' })
+  const st = s.toLocaleTimeString('pl', opt)
+  const et = e.toLocaleTimeString('pl', opt)
   return sameDay
-    ? `${day}, ${s.toLocaleTimeString('pl', opt)}–${e.toLocaleTimeString('pl', opt)}`
-    : `${s.toLocaleString('pl')} – ${e.toLocaleString('pl')}`
+    ? `${format(s, 'dd/MM/yyyy')}, ${st}–${et}`
+    : `${format(s, 'dd/MM/yyyy')} ${st} – ${format(e, 'dd/MM/yyyy')} ${et}`
 }
 
 function toDuration(minutes: number): string {

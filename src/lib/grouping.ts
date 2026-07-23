@@ -17,3 +17,33 @@ export function groupByCategory(tasks: Task[], categories: Category[]): TaskGrou
   }
   return [...groups.values()].filter((g) => g.tasks.length > 0)
 }
+
+export interface DayGroup {
+  /** YYYY-MM-DD; brak = zadania bez terminu. */
+  dateKey?: string
+  tasks: Task[]
+}
+
+/** Grupuje zadania wg dnia (rosnąco); zadania bez terminu na końcu. */
+export function groupByDay(tasks: Task[]): DayGroup[] {
+  const byDay = new Map<string, Task[]>()
+  const undated: Task[] = []
+  for (const t of tasks) {
+    if (t.dueDate) {
+      if (!byDay.has(t.dueDate)) byDay.set(t.dueDate, [])
+      byDay.get(t.dueDate)!.push(t)
+    } else {
+      undated.push(t)
+    }
+  }
+  const groups: DayGroup[] = [...byDay.entries()]
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([dateKey, ts]) => ({
+      dateKey,
+      tasks: ts.sort((a, b) => a.order - b.order),
+    }))
+  if (undated.length) {
+    groups.push({ tasks: undated.sort((a, b) => a.order - b.order) })
+  }
+  return groups
+}

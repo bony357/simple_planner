@@ -12,7 +12,7 @@ interface TaskItemProps {
 
 export default function TaskItem({ task, category, onEdit, draggable }: TaskItemProps) {
   const done = task.status === 'done'
-  const recur = task.sourceEventId ? 'z kalendarza' : ''
+  const fromCalendar = !!task.sourceEventId
 
   return (
     <div
@@ -22,6 +22,16 @@ export default function TaskItem({ task, category, onEdit, draggable }: TaskItem
       data-task-color={category?.color ?? ''}
       data-draggable={draggable ? 'true' : 'false'}
     >
+      {fromCalendar && (
+        <span
+          className={styles.calBadge}
+          aria-label="Z kalendarza"
+          title="Z kalendarza"
+        >
+          📅
+        </span>
+      )}
+
       <button
         className={styles.check}
         aria-label={done ? 'Odznacz' : 'Oznacz jako wykonane'}
@@ -38,18 +48,6 @@ export default function TaskItem({ task, category, onEdit, draggable }: TaskItem
       >
         <span className={`${styles.title} ${done ? styles.doneTitle : ''}`}>
           {task.title}
-        </span>
-        <span className={styles.meta}>
-          {category && (
-            <span className={styles.chip}>
-              <span
-                className={styles.dot}
-                style={{ background: category.color }}
-              />
-              {category.name}
-            </span>
-          )}
-          {recur ? <span>🔁 {recur}</span> : null}
         </span>
       </button>
 

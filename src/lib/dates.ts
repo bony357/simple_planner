@@ -14,12 +14,17 @@ export function fmtTime(iso: string): string {
   return format(parseISO(iso), 'HH:mm')
 }
 
+/** Data w formacie DD/MM/YYYY. Przyjmuje „YYYY-MM-DD" lub pełne ISO. */
+export function fmtDate(dateKeyOrIso: string): string {
+  return format(parseISO(dateKeyOrIso), 'dd/MM/yyyy')
+}
+
 export function fmtDayLabel(dateKey: string): string {
-  return format(parseISO(dateKey), 'EEEE, d MMMM', { locale: pl })
+  return format(parseISO(dateKey), 'EEEE, dd/MM/yyyy', { locale: pl })
 }
 
 export function fmtShortDay(iso: string): string {
-  return format(parseISO(iso), 'EEE d.MM', { locale: pl })
+  return format(parseISO(iso), 'EEE, dd/MM/yyyy', { locale: pl })
 }
 
 /** Zaokrąglij do najbliższego wielokrotności minut (domyślnie 15). */

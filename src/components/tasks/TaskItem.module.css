@@ -1,4 +1,5 @@
 .item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -7,6 +8,16 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   min-height: var(--touch-target);
+}
+
+/* Znacznik „zadanie z kalendarza" — mała ikonka w lewym górnym rogu. */
+.calBadge {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 11px;
+  line-height: 1;
+  pointer-events: none;
 }
 
 .check {

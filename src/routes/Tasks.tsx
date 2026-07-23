@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../db/dexie'
 import type { Task } from '../db/types'
-import { groupByCategory } from '../lib/grouping'
+import { groupByDay } from '../lib/grouping'
+import { fmtDayLabel } from '../lib/dates'
 import TaskItem from '../components/tasks/TaskItem'
 import TaskForm from '../components/tasks/TaskForm'
 import CategoryManager from '../components/tasks/CategoryManager'
@@ -12,8 +13,6 @@ type Filter = 'todo' | 'done' | 'all'
 
 export default function Tasks() {
   const [filter, setFilter] = useState<Filter>('todo')
-  const categories =
-    useLiveQuery(() => db.categories.orderBy('order').toArray(), [], []) ?? []
   const tasks =
     useLiveQuery(async () => {
       const all = await db.tasks.toArray()
@@ -24,18 +23,11 @@ export default function Tasks() {
   const [showAdd, setShowAdd] = useState(false)
   const [showCats, setShowCats] = useState(false)
 
-  const catById = useMemo(
-    () => new Map(categories.map((c) => [c.id, c])),
-    [categories],
-  )
   const filtered = useMemo(
     () => tasks.filter((t) => (filter === 'all' ? true : t.status === filter)),
     [tasks, filter],
   )
-  const groups = useMemo(
-    () => groupByCategory(filtered, categories),
-    [filtered, categories],
-  )
+  const groups = useMemo(() => groupByDay(filtered), [filtered])
 
   return (
     <div className="page">
@@ -62,19 +54,14 @@ export default function Tasks() {
       {groups.length === 0 && <p className="empty">Brak zadań w tym widoku.</p>}
 
       {groups.map((g) => (
-        <section key={g.category?.id ?? 'none'} className="card">
+        <section key={g.dateKey ?? 'none'} className="card">
           <div className="card-title">
-            {g.category?.name ?? 'Bez kategorii'}
+            {g.dateKey ? fmtDayLabel(g.dateKey) : 'Bez terminu'}
             <span className="muted">{g.tasks.length}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 'var(--gap) var(--gap-lg) var(--gap-lg)' }}>
             {g.tasks.map((t) => (
-              <TaskItem
-                key={t.id}
-                task={t}
-                category={t.categoryId ? catById.get(t.categoryId) : undefined}
-                onEdit={setEditing}
-              />
+              <TaskItem key={t.id} task={t} onEdit={setEditing} />
             ))}
           </div>
         </section>

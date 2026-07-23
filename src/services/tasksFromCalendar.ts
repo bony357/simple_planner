@@ -75,6 +75,15 @@ export async function materializeCalendarTasks(): Promise<number> {
         .first()
       if (existing) continue
 
+      // Pomiń wydarzenia, które sami utworzyliśmy z zadania (mają lokalne
+      // powiązanie taskId). Inaczej zadanie przeciągnięte na kalendarz wróciłoby
+      // jako nowe, zduplikowane zadanie po wypchnięciu do Google.
+      const fromTask = await db.events
+        .where('googleEventId')
+        .equals(r.id)
+        .first()
+      if (fromTask?.taskId) continue
+
       await addTask({
         title: r.summary || '(bez tytułu)',
         dueDate,
