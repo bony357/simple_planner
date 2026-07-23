@@ -7,6 +7,8 @@
   justify-content: center;
   z-index: 100;
   animation: fade var(--transition);
+  /* Płynne unoszenie arkusza, gdy pojawia się klawiatura ekranowa. */
+  transition: padding-bottom var(--transition);
 }
 
 .sheet {

@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import styles from './Sheet.module.css'
 
 interface SheetProps {
@@ -39,9 +39,34 @@ export default function Sheet({ open, title, onClose, children }: SheetProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
+  // Klawiatura ekranowa: mierzymy jej wysokość przez visualViewport i unosimy
+  // arkusz o tyle w górę, żeby pola formularza nie chowały się za klawiaturą.
+  const [keyboardInset, setKeyboardInset] = useState(0)
+  useEffect(() => {
+    if (!open) return
+    const vv = window.visualViewport
+    if (!vv) return
+    const update = () => {
+      const overlap = window.innerHeight - (vv.height + vv.offsetTop)
+      setKeyboardInset(Math.max(0, Math.round(overlap)))
+    }
+    update()
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+      setKeyboardInset(0)
+    }
+  }, [open])
+
   if (!open) return null
   return (
-    <div className={styles.backdrop} onClick={onClose}>
+    <div
+      className={styles.backdrop}
+      onClick={onClose}
+      style={{ paddingBottom: keyboardInset }}
+    >
       <div
         className={styles.sheet}
         role="dialog"

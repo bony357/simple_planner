@@ -3,6 +3,7 @@ import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'r
 import Dashboard from './routes/Dashboard'
 import Tasks from './routes/Tasks'
 import Settings from './routes/Settings'
+import AuthBanner from './components/common/AuthBanner'
 
 /**
  * Zakładka nawigacji dolnej. Zmiana zakładki nigdy nie dokłada więcej niż
@@ -33,6 +34,7 @@ export default function App() {
   return (
     <HashRouter>
       <div className="app-shell">
+        <AuthBanner />
         <main className="app-main">
           <Routes>
             <Route path="/" element={<Dashboard />} />
