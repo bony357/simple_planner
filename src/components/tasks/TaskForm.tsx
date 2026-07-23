@@ -44,7 +44,6 @@ export default function TaskForm({ task, defaultDueDate, onDone }: TaskFormProps
         <input
           className="input"
           value={title}
-          autoFocus
           placeholder="Co trzeba zrobić?"
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && save()}
