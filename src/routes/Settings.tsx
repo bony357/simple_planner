@@ -14,12 +14,12 @@ export default function Settings() {
   const [msg, setMsg] = useState<string | null>(null)
   const [models, setModels] = useState<string[]>([])
 
-  const withBusy = async (key: string, fn: () => Promise<void>, ok: string) => {
+  const withBusy = async (key: string, fn: () => Promise<void>, ok?: string) => {
     setBusy(key)
     setMsg(null)
     try {
       await fn()
-      setMsg(ok)
+      if (ok) setMsg(ok)
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Błąd')
     } finally {
@@ -28,18 +28,14 @@ export default function Settings() {
   }
 
   const doSync = () =>
-    withBusy(
-      'sync',
-      async () => {
-        const r = await runSync(true)
-        setMsg(
-          r
-            ? `Synchronizacja OK — wysłano ${r.pushed}, pobrano ${r.pulled}.`
-            : 'Synchronizacja pominięta (włącz przełącznik powyżej).',
-        )
-      },
-      'Synchronizacja zakończona.',
-    )
+    withBusy('sync', async () => {
+      const r = await runSync(true)
+      setMsg(
+        r
+          ? `Synchronizacja OK — wysłano ${r.pushed}, pobrano ${r.pulled}.`
+          : 'Synchronizacja pominięta (włącz przełącznik powyżej lub brak Client ID).',
+      )
+    })
 
   const loadModels = () =>
     withBusy(

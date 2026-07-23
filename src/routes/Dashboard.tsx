@@ -16,7 +16,7 @@ export default function Dashboard() {
 
   // Synchronizacja z Google Calendar przy wejściu (jeśli włączona).
   useEffect(() => {
-    if (syncCalendar) void runSync().catch(() => {})
+    if (syncCalendar) void runSync().catch((e) => console.error('[sync] tło Dashboard', e))
   }, [syncCalendar])
 
   return (

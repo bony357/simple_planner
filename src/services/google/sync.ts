@@ -33,6 +33,7 @@ export async function runSync(interactive = false): Promise<SyncResult | undefin
     return { pushed, pulled }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
+    console.error('[sync] runSync nieudany', e)
     useSettings.getState().update({ lastSyncError: message })
     if (interactive) throw e
     return
@@ -94,6 +95,7 @@ async function pushLocal(): Promise<number> {
       count++
     } catch (e) {
       // Zostaw jako pending — spróbujemy ponownie; zapamiętaj pierwszy błąd.
+      console.error('[sync] push nieudany dla wydarzenia', ev.id, ev.title, e)
       if (!firstError) firstError = e
     }
   }
