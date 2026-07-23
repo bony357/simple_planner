@@ -33,6 +33,15 @@ export default function TodoList() {
         .sort((a, b) => (a.dueDate! < b.dueDate! ? -1 : 1))
     }, [today]) ?? []
 
+  // Nadchodzące: zadania z terminem po dziś (m.in. zmaterializowane z kalendarza).
+  const upcoming =
+    useLiveQuery(async () => {
+      const all = await db.tasks.where('status').equals('todo').toArray()
+      return all
+        .filter((t) => t.dueDate && t.dueDate > today)
+        .sort((a, b) => (a.dueDate! < b.dueDate! ? -1 : 1))
+    }, [today]) ?? []
+
   const [quick, setQuick] = useState('')
   const [editing, setEditing] = useState<Task | null>(null)
   const [showAdd, setShowAdd] = useState(false)
@@ -65,7 +74,7 @@ export default function TodoList() {
         Lista to-do
         <button
           className="btn btn-icon"
-          aria-label="Zaległe zadania"
+          aria-label="Zaległe i nadchodzące zadania"
           onClick={() => setShowOverdue(true)}
         >
           🗓{overdue.length > 0 ? <sup>{overdue.length}</sup> : null}
@@ -141,23 +150,48 @@ export default function TodoList() {
 
       <Sheet
         open={showOverdue}
-        title="Niedokończone z poprzednich dni"
+        title="Zaległe i nadchodzące"
         onClose={() => setShowOverdue(false)}
       >
-        {overdue.length === 0 && <p className="empty">Nic zaległego 🎉</p>}
-        {overdue.map((t) => (
-          <div key={t.id} className="row">
-            <div style={{ flex: 1 }}>
-              <TaskItem
-                task={t}
-                category={t.categoryId ? catById.get(t.categoryId) : undefined}
-              />
+        <div className={styles.sheetSection}>
+          <div className={styles.sheetHeading}>Niedokończone z poprzednich dni</div>
+          {overdue.length === 0 && <p className="empty">Nic zaległego 🎉</p>}
+          {overdue.map((t) => (
+            <div key={t.id} className="row">
+              <div style={{ flex: 1 }}>
+                <TaskItem
+                  task={t}
+                  category={t.categoryId ? catById.get(t.categoryId) : undefined}
+                />
+                <span className={styles.due}>{t.dueDate}</span>
+              </div>
+              <button className="btn btn-primary" onClick={() => pickOverdue(t)}>
+                Na dziś
+              </button>
             </div>
-            <button className="btn btn-primary" onClick={() => pickOverdue(t)}>
-              Na dziś
-            </button>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        <div className={styles.sheetSection}>
+          <div className={styles.sheetHeading}>Nadchodzące (do 14 dni)</div>
+          {upcoming.length === 0 && (
+            <p className="empty">Brak nadchodzących zadań</p>
+          )}
+          {upcoming.map((t) => (
+            <div key={t.id} className="row">
+              <div style={{ flex: 1 }}>
+                <TaskItem
+                  task={t}
+                  category={t.categoryId ? catById.get(t.categoryId) : undefined}
+                />
+                <span className={styles.due}>{t.dueDate}</span>
+              </div>
+              <button className="btn btn-primary" onClick={() => pickOverdue(t)}>
+                Na dziś
+              </button>
+            </div>
+          ))}
+        </div>
       </Sheet>
     </section>
   )

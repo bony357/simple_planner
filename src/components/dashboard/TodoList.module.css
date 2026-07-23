@@ -53,3 +53,24 @@
   flex-direction: column;
   gap: 6px;
 }
+
+/* Sekcje w arkuszu „Zaległe i nadchodzące". */
+.sheetSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sheetSection + .sheetSection {
+  margin-top: var(--gap-lg);
+}
+.sheetHeading {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.due {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
