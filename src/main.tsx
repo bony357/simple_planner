@@ -6,9 +6,12 @@ import { ensureSeeded } from './db/dexie'
 import { applyStoredTheme } from './store/useSettings'
 import { materializeCalendarTasks } from './services/tasksFromCalendar'
 import { runTasksSync } from './services/google/tasksSync'
+import { installBlurOnOutsideTap } from './lib/blurOnOutsideTap'
 import './theme/global.css'
 
 applyStoredTheme()
+// Handwriting Onyx tylko przy aktywnym polu tekstowym (patrz opis w module).
+installBlurOnOutsideTap()
 // Najpierw pobieramy zadania z Google (pull), dopiero potem materializujemy
 // wydarzenia kalendarza. Dzięki temu drugie urządzenie zna już `sourceEventId`
 // zadań utworzonych z kalendarza gdzie indziej i nie tworzy duplikatów.
