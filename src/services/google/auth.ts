@@ -6,6 +6,10 @@ interface TokenResponse {
   expires_in: number
   error?: string
 }
+interface TokenErrorResponse {
+  type?: string
+  message?: string
+}
 interface TokenClient {
   requestAccessToken: (opts?: { prompt?: string }) => void
   callback: (resp: TokenResponse) => void
@@ -19,6 +23,7 @@ declare global {
             client_id: string
             scope: string
             callback: (resp: TokenResponse) => void
+            error_callback?: (err: TokenErrorResponse) => void
           }) => TokenClient
         }
       }
@@ -31,7 +36,8 @@ export const GOOGLE_SCOPES = [
   'https://www.googleapis.com/auth/calendar.events',
   // readonly → lista kalendarzy (calendarList) + podgląd wydarzeń z innych kalendarzy
   'https://www.googleapis.com/auth/calendar.readonly',
-  'https://www.googleapis.com/auth/spreadsheets',
+  // tasks → dwukierunkowa synchronizacja z Listą zadań Google
+  'https://www.googleapis.com/auth/tasks',
 ].join(' ')
 
 const GIS_SRC = 'https://accounts.google.com/gsi/client'
@@ -86,6 +92,18 @@ export async function getAccessToken(interactive = true): Promise<string> {
         accessToken = resp.access_token
         tokenExpiry = Date.now() + (resp.expires_in - 60) * 1000
         resolve(accessToken)
+      },
+      // Bez tego callbacku ciche niepowodzenie (np. prompt:'none' bez sesji)
+      // nigdy nie rozstrzygnęłoby Promise — token „wisiałby" w nieskończoność.
+      error_callback: (err) => {
+        reject(
+          new Error(
+            err?.message ||
+              (err?.type === 'popup_closed'
+                ? 'Zamknięto okno logowania Google.'
+                : 'Logowanie Google wymaga interakcji — kliknij „Zaloguj do Google".'),
+          ),
+        )
       },
     })
     tokenClient.requestAccessToken({ prompt: interactive ? '' : 'none' })

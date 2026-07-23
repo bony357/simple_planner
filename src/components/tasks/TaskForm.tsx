@@ -22,9 +22,6 @@ export default function TaskForm({ task, defaultDueDate, onDone }: TaskFormProps
   const [categoryId, setCategoryId] = useState(task?.categoryId ?? '')
   const [notes, setNotes] = useState(task?.notes ?? '')
   const [dueDate, setDueDate] = useState(task?.dueDate ?? defaultDueDate ?? '')
-  const [estimatedMinutes, setEstimatedMinutes] = useState(
-    task?.estimatedMinutes ? String(task.estimatedMinutes) : '',
-  )
 
   const save = async () => {
     const t = title.trim()
@@ -34,7 +31,6 @@ export default function TaskForm({ task, defaultDueDate, onDone }: TaskFormProps
       categoryId: categoryId || undefined,
       notes: notes.trim() || undefined,
       dueDate: dueDate || undefined,
-      estimatedMinutes: estimatedMinutes ? Number(estimatedMinutes) : undefined,
     }
     if (task) await updateTask(task.id, payload)
     else await addTask(payload)
@@ -71,29 +67,14 @@ export default function TaskForm({ task, defaultDueDate, onDone }: TaskFormProps
         </select>
       </div>
 
-      <div className="row">
-        <div className="field" style={{ flex: 1 }}>
-          <label>Termin (dzień)</label>
-          <input
-            className="input"
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-          />
-        </div>
-        <div className="field" style={{ flex: 1 }}>
-          <label>Czas (min)</label>
-          <input
-            className="input"
-            type="number"
-            inputMode="numeric"
-            min={5}
-            step={15}
-            placeholder="np. 30"
-            value={estimatedMinutes}
-            onChange={(e) => setEstimatedMinutes(e.target.value)}
-          />
-        </div>
+      <div className="field">
+        <label>Termin (dzień)</label>
+        <input
+          className="input"
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+        />
       </div>
 
       <div className="field">

@@ -9,22 +9,12 @@ export interface Task {
   createdAt: string // ISO
   completedAt?: string // ISO
   dueDate?: string // ISO date (YYYY-MM-DD) — na kiedy zaplanowane
-  recurrenceRule?: string // reguła RRULE (starsze zadania; nowe używają szablonów)
-  templateId?: string // powiązanie z szablonem cyklicznym (dla instancji)
-  estimatedMinutes?: number
-  order: number
-}
-
-/** Szablon zadania cyklicznego — „wydzielone" źródło powtarzalnych zadań. */
-export interface RecurringTemplate {
-  id: string
-  title: string
-  notes?: string
-  categoryId?: string
-  estimatedMinutes?: number
-  rule: string // RRULE, np. "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
-  active: boolean
-  lastMaterializedDate?: string // YYYY-MM-DD — do której daty utworzono instancje
+  /** Powiązanie z zadaniem w Google Tasks (dla sync). */
+  googleTaskId?: string
+  /** Stan synchronizacji z Google Tasks. */
+  syncState?: SyncState
+  /** ID wystąpienia wydarzenia Google, z którego zmaterializowano zadanie (dedup). */
+  sourceEventId?: string
   order: number
 }
 

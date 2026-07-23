@@ -73,10 +73,9 @@ export default function ScheduleCalendar({
     dragRef.current = new Draggable(document.body, {
       itemSelector: '.fc-draggable-task[data-draggable="true"]',
       eventData: (el) => {
-        const minutes = Number(el.getAttribute('data-task-minutes')) || 30
         return {
           title: el.getAttribute('data-task-title') ?? 'Zadanie',
-          duration: toDuration(minutes),
+          duration: toDuration(30),
           extendedProps: {
             taskId: el.getAttribute('data-task-id') ?? undefined,
             color: el.getAttribute('data-task-color') ?? undefined,

@@ -1,11 +1,10 @@
 import Dexie, { type Table } from 'dexie'
-import type { Task, Category, CalendarEvent, RecurringTemplate } from './types'
+import type { Task, Category, CalendarEvent } from './types'
 
 export class PlannerDB extends Dexie {
   tasks!: Table<Task, string>
   categories!: Table<Category, string>
   events!: Table<CalendarEvent, string>
-  recurringTemplates!: Table<RecurringTemplate, string>
 
   constructor() {
     super('simple-planner')
@@ -21,6 +20,14 @@ export class PlannerDB extends Dexie {
       categories: 'id, order',
       events: 'id, taskId, start, source, googleEventId, syncState',
       recurringTemplates: 'id, active, order',
+    })
+    // v3: sync z Google Tasks (googleTaskId/syncState/sourceEventId),
+    // usunięcie tabeli szablonów cyklicznych (zastąpione wydarzeniami z kalendarza).
+    this.version(3).stores({
+      tasks: 'id, status, categoryId, dueDate, order, googleTaskId, syncState, sourceEventId',
+      categories: 'id, order',
+      events: 'id, taskId, start, source, googleEventId, syncState',
+      recurringTemplates: null,
     })
   }
 }

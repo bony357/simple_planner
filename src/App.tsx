@@ -2,7 +2,6 @@ import type { MouseEvent } from 'react'
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import Dashboard from './routes/Dashboard'
 import Tasks from './routes/Tasks'
-import Recurring from './routes/Recurring'
 import Settings from './routes/Settings'
 
 /**
@@ -38,7 +37,6 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/tasks" element={<Tasks />} />
-            <Route path="/recurring" element={<Recurring />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -46,7 +44,6 @@ export default function App() {
         <nav className="app-nav">
           <TabLink to="/" end icon="📅" label="Dziś" />
           <TabLink to="/tasks" icon="✓" label="Zadania" />
-          <TabLink to="/recurring" icon="🔁" label="Cykliczne" />
           <TabLink to="/settings" icon="⚙" label="Ustawienia" />
         </nav>
       </div>

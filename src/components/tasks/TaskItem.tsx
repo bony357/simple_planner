@@ -1,6 +1,5 @@
 import type { Category, Task } from '../../db/types'
 import { toggleTaskDone } from '../../db/repo'
-import { recurrenceLabel } from '../../services/recurrence'
 import styles from './TaskItem.module.css'
 
 interface TaskItemProps {
@@ -13,14 +12,13 @@ interface TaskItemProps {
 
 export default function TaskItem({ task, category, onEdit, draggable }: TaskItemProps) {
   const done = task.status === 'done'
-  const recur = task.templateId ? 'cykliczne' : recurrenceLabel(task.recurrenceRule)
+  const recur = task.sourceEventId ? 'z kalendarza' : ''
 
   return (
     <div
       className={`${styles.item} fc-draggable-task`}
       data-task-id={task.id}
       data-task-title={task.title}
-      data-task-minutes={task.estimatedMinutes ?? ''}
       data-task-color={category?.color ?? ''}
       data-draggable={draggable ? 'true' : 'false'}
     >
@@ -51,7 +49,6 @@ export default function TaskItem({ task, category, onEdit, draggable }: TaskItem
               {category.name}
             </span>
           )}
-          {task.estimatedMinutes ? <span>{task.estimatedMinutes} min</span> : null}
           {recur ? <span>🔁 {recur}</span> : null}
         </span>
       </button>

@@ -7,17 +7,29 @@ import Sheet from '../components/common/Sheet'
 import { todayISO } from '../lib/dates'
 import { useSettings } from '../store/useSettings'
 import { runSync } from '../services/google/sync'
+import { runTasksSync } from '../services/google/tasksSync'
+import { materializeCalendarTasks } from '../services/tasksFromCalendar'
 import styles from './Dashboard.module.css'
 
 export default function Dashboard() {
   const today = todayISO()
   const [showAssistant, setShowAssistant] = useState(false)
   const syncCalendar = useSettings((s) => s.syncCalendar)
+  const syncTasks = useSettings((s) => s.syncTasks)
 
   // Synchronizacja z Google Calendar przy wejściu (jeśli włączona).
   useEffect(() => {
     if (syncCalendar) void runSync().catch((e) => console.error('[sync] tło Dashboard', e))
   }, [syncCalendar])
+
+  // Materializacja zadań z kalendarza + sync z Google Tasks przy wejściu.
+  useEffect(() => {
+    void materializeCalendarTasks()
+      .then(() => {
+        if (syncTasks) return runTasksSync()
+      })
+      .catch((e) => console.error('[tasksSync] tło Dashboard', e))
+  }, [syncTasks])
 
   return (
     <div className={styles.dash}>

@@ -3,7 +3,9 @@ import { useSettings } from '../store/useSettings'
 import { getAccessToken, isSignedIn, signOut } from '../services/google/auth'
 import { runSync } from '../services/google/sync'
 import { listCalendars } from '../services/google/calendar'
-import { exportToSheets, importFromSheets } from '../services/google/sheets'
+import { listTaskLists } from '../services/google/tasks'
+import { runTasksSync } from '../services/google/tasksSync'
+import { materializeCalendarTasks } from '../services/tasksFromCalendar'
 import { listGeminiModels } from '../services/gemini'
 import type { CalendarInfo } from '../db/types'
 import { fmtTime } from '../lib/dates'
@@ -34,6 +36,18 @@ export default function Settings() {
         r
           ? `Synchronizacja OK — wysłano ${r.pushed}, pobrano ${r.pulled}.`
           : 'Synchronizacja pominięta (włącz przełącznik powyżej lub brak Client ID).',
+      )
+    })
+
+  const doTasksSync = () =>
+    withBusy('tasksSync', async () => {
+      // Najpierw zmaterializuj wydarzenia z kalendarza źródłowego jako zadania.
+      await materializeCalendarTasks()
+      const r = await runTasksSync(true)
+      setMsg(
+        r
+          ? `Zadania OK — wysłano ${r.pushed}, pobrano ${r.pulled}.`
+          : 'Synchronizacja zadań pominięta (włącz przełącznik lub brak Client ID).',
       )
     })
 
@@ -137,7 +151,7 @@ export default function Settings() {
               <label>Kalendarze do podglądu (tylko odczyt)</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {s.availableCalendars
-                  .filter((c) => c.id !== s.calendarId)
+                  .filter((c) => c.id !== s.calendarId && c.id !== s.taskCalendarId)
                   .map((c) => {
                     const checked = s.readCalendarIds.includes(c.id)
                     return (
@@ -214,39 +228,98 @@ export default function Settings() {
         </div>
       </section>
 
-      {/* Sheets */}
+      {/* Google Tasks */}
       <section className="card">
-        <div className="card-title">Kopia w Google Sheets</div>
+        <div className="card-title">Zadania Google (Google Tasks)</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap)', padding: 'var(--gap) var(--gap-lg) var(--gap-lg)' }}>
           <div className="field">
-            <label>ID arkusza (tworzony automatycznie przy eksporcie)</label>
+            <label>Lista zadań (docelowa)</label>
+            {s.availableTaskLists.length > 0 ? (
+              <select
+                className="select"
+                value={s.taskListId}
+                onChange={(e) => s.update({ taskListId: e.target.value })}
+              >
+                {s.availableTaskLists.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.summary}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className="input"
+                placeholder="@default"
+                value={s.taskListId}
+                onChange={(e) => s.update({ taskListId: e.target.value })}
+              />
+            )}
+          </div>
+
+          <button
+            className="btn"
+            disabled={busy !== null}
+            onClick={() =>
+              withBusy(
+                'lists',
+                async () => {
+                  const lists = await listTaskLists()
+                  s.update({ availableTaskLists: lists })
+                },
+                'Pobrano listy zadań.',
+              )
+            }
+          >
+            {busy === 'lists' ? 'Pobieram…' : 'Pobierz listy zadań'}
+          </button>
+
+          <div className="field">
+            <label>Kalendarz źródłowy zadań cyklicznych</label>
+            {s.availableCalendars.length > 0 ? (
+              <select
+                className="select"
+                value={s.taskCalendarId}
+                onChange={(e) => s.update({ taskCalendarId: e.target.value })}
+              >
+                <option value="">— brak —</option>
+                {s.availableCalendars.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.summary}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <p className="muted" style={{ fontSize: 'var(--font-size-sm)' }}>
+                Najpierw pobierz kalendarze konta (sekcja powyżej).
+              </p>
+            )}
+          </div>
+
+          <label className="row" style={{ gap: 10 }}>
             <input
-              className="input"
-              placeholder="(puste = utwórz nowy)"
-              value={s.sheetsId}
-              onChange={(e) => s.update({ sheetsId: e.target.value })}
+              type="checkbox"
+              checked={s.syncTasks}
+              onChange={(e) => s.update({ syncTasks: e.target.checked })}
+              style={{ width: 24, height: 24 }}
             />
-          </div>
+            Synchronizuj zadania z Google Tasks
+          </label>
           <div className="row row-wrap">
-            <button
-              className="btn"
-              disabled={busy !== null}
-              onClick={() =>
-                withBusy('export', exportToSheets, 'Zadania wyeksportowane do arkusza.')
-              }
-            >
-              {busy === 'export' ? 'Eksportuję…' : 'Eksportuj do Sheets'}
-            </button>
-            <button
-              className="btn"
-              disabled={busy !== null}
-              onClick={() =>
-                withBusy('import', importFromSheets, 'Zaimportowano z arkusza.')
-              }
-            >
-              {busy === 'import' ? 'Importuję…' : 'Importuj z Sheets'}
+            <button className="btn" disabled={busy !== null} onClick={doTasksSync}>
+              {busy === 'tasksSync' ? 'Synchronizuję…' : 'Synchronizuj zadania teraz'}
             </button>
           </div>
+          <p className="muted" style={{ fontSize: 'var(--font-size-sm)' }}>
+            Synchronizacja dwukierunkowa. Kategoria trafia do tytułu jako prefiks
+            <b> [Nazwa]</b>. Wydarzenia z <b>kalendarza źródłowego</b> stają się
+            zadaniami to-do na dany dzień.
+          </p>
+          {s.lastTasksSyncAt && (
+            <p className="muted">Ostatnia synchronizacja zadań: {fmtTime(s.lastTasksSyncAt)}</p>
+          )}
+          {s.lastTasksSyncError && (
+            <p style={{ color: 'var(--danger)' }}>Błąd sync zadań: {s.lastTasksSyncError}</p>
+          )}
         </div>
       </section>
 

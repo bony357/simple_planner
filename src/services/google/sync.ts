@@ -4,7 +4,7 @@ import { getAccessToken } from './auth'
 import { insertEvent, listEvents, patchEvent, removeEvent } from './calendar'
 import type { CalendarEvent } from '../../db/types'
 
-let syncing = false
+let inFlight: Promise<SyncResult | undefined> | null = null
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 export interface SyncResult {
@@ -17,29 +17,37 @@ export interface SyncResult {
  * Zasada local-first: najpierw wypychamy lokalne zmiany, potem pobieramy zdalne.
  * `interactive` = czy wolno pokazać okno logowania Google.
  * W trybie interaktywnym błędy są rzucane (do pokazania w UI); w tle — połykane.
+ *
+ * Gdy synchronizacja już trwa, kolejne wywołania dołączają do tej samej operacji
+ * (zamiast być po cichu pomijane) — dzięki temu blokada nie potrafi „utknąć",
+ * a przycisk w UI nigdy nie zgłasza fałszywie „pominięto".
  */
 export async function runSync(interactive = false): Promise<SyncResult | undefined> {
   const { syncCalendar, googleClientId } = useSettings.getState()
-  if (!syncCalendar || !googleClientId.trim() || syncing) return
-  syncing = true
-  try {
-    await getAccessToken(interactive)
-    const pushed = await pushLocal()
-    const pulled = await pullRemote()
-    useSettings.getState().update({
-      lastSyncAt: new Date().toISOString(),
-      lastSyncError: undefined,
-    })
-    return { pushed, pulled }
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e)
-    console.error('[sync] runSync nieudany', e)
-    useSettings.getState().update({ lastSyncError: message })
-    if (interactive) throw e
-    return
-  } finally {
-    syncing = false
-  }
+  if (!syncCalendar || !googleClientId.trim()) return
+  if (inFlight) return inFlight
+
+  inFlight = (async () => {
+    try {
+      await getAccessToken(interactive)
+      const pushed = await pushLocal()
+      const pulled = await pullRemote()
+      useSettings.getState().update({
+        lastSyncAt: new Date().toISOString(),
+        lastSyncError: undefined,
+      })
+      return { pushed, pulled }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      console.error('[sync] runSync nieudany', e)
+      useSettings.getState().update({ lastSyncError: message })
+      if (interactive) throw e
+      return undefined
+    } finally {
+      inFlight = null
+    }
+  })()
+  return inFlight
 }
 
 /**
