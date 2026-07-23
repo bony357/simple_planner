@@ -19,12 +19,16 @@ export default function UpcomingSchedule({ fromDate, days = 7 }: UpcomingSchedul
     .slice(0, 10)
   const end = `${endKey}T23:59:59`
 
+  // Nie pokazuj wydarzeń, które już się rozpoczęły (dzisiaj poniżej bieżącej godziny).
+  const nowIso = new Date().toISOString()
+  const lower = start > nowIso ? start : nowIso
+
   const events = useLiveQuery(async () => {
     const all = await db.events.toArray()
     return all
-      .filter((e) => e.syncState !== 'deleted' && e.start > start && e.start <= end)
+      .filter((e) => e.syncState !== 'deleted' && e.start > lower && e.start <= end)
       .sort((a, b) => a.start.localeCompare(b.start))
-  }, [start, end]) ?? []
+  }, [lower, end]) ?? []
 
   const byDay = useMemo(() => {
     const map = new Map<string, CalendarEvent[]>()
