@@ -13,20 +13,20 @@ interface UpcomingScheduleProps {
 
 /** Agenda najbliższych dni — same wpisane wydarzenia, bez pustych slotów. */
 export default function UpcomingSchedule({ fromDate, days = 7 }: UpcomingScheduleProps) {
-  const start = `${fromDate}T00:00:00`
+  // Sekcja pokazuje tylko kolejne dni — dzisiejszy dzień jest wykluczony.
+  const tomorrowKey = new Date(new Date(fromDate).getTime() + 86400000)
+    .toISOString()
+    .slice(0, 10)
+  const lower = `${tomorrowKey}T00:00:00`
   const endKey = new Date(new Date(fromDate).getTime() + days * 86400000)
     .toISOString()
     .slice(0, 10)
   const end = `${endKey}T23:59:59`
 
-  // Nie pokazuj wydarzeń, które już się rozpoczęły (dzisiaj poniżej bieżącej godziny).
-  const nowIso = new Date().toISOString()
-  const lower = start > nowIso ? start : nowIso
-
   const events = useLiveQuery(async () => {
     const all = await db.events.toArray()
     return all
-      .filter((e) => e.syncState !== 'deleted' && e.start > lower && e.start <= end)
+      .filter((e) => e.syncState !== 'deleted' && e.start >= lower && e.start <= end)
       .sort((a, b) => a.start.localeCompare(b.start))
   }, [lower, end]) ?? []
 
