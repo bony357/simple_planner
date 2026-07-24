@@ -48,6 +48,11 @@ let gisReady: Promise<void> | null = null
 let tokenClient: TokenClient | null = null
 let accessToken: string | null = null
 let tokenExpiry = 0
+// Jedno wspólne, ciche (nieinteraktywne) żądanie tokenu „w locie". Przy
+// starcie/odświeżeniu wiele modułów naraz (sync kalendarza, sync zadań,
+// materializacja) prosi o token — bez łączenia każde tworzyłoby osobnego
+// klienta GIS i osobno migało oknem logowania.
+let silentRequest: Promise<string> | null = null
 
 /**
  * Odczyt/zapis tokenu w localStorage — dzięki temu przeładowanie strony lub
@@ -113,6 +118,21 @@ export async function getAccessToken(interactive = true): Promise<string> {
     return accessToken!
   }
 
+  // Ciche żądania łączymy w jedno — kolejne wywołania dołączają do trwającego,
+  // zamiast otwierać własne okno GIS. Interaktywne (z przycisku, po geście
+  // użytkownika) zawsze uruchamiamy od razu.
+  if (!interactive) {
+    if (silentRequest) return silentRequest
+    silentRequest = requestToken(false).finally(() => {
+      silentRequest = null
+    })
+    return silentRequest
+  }
+
+  return requestToken(true)
+}
+
+async function requestToken(interactive: boolean): Promise<string> {
   const clientId = useSettings.getState().googleClientId.trim()
   if (!clientId) {
     throw new Error('Brak Google Client ID — uzupełnij w Ustawieniach.')

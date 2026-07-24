@@ -2,6 +2,7 @@ import { db, newId } from '../../db/dexie'
 import { useSettings } from '../../store/useSettings'
 import { getAccessToken } from './auth'
 import { insertEvent, listEvents, patchEvent, removeEvent } from './calendar'
+import { runTasksSync } from './tasksSync'
 import type { CalendarEvent } from '../../db/types'
 
 let inFlight: Promise<SyncResult | undefined> | null = null
@@ -58,7 +59,21 @@ export function scheduleSync(): void {
   if (!useSettings.getState().syncCalendar) return
   if (debounceTimer) clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
-    void runSync(false)
+    void runSync(false).then(async (res) => {
+      // Po udanej synchronizacji (lokalne wydarzenia mają już googleEventId)
+      // od razu materializujemy nowe wydarzenia jako zadania to-do i wypychamy
+      // je do Google Tasks. Bez tego wydarzenie utworzone w „Planie dnia"
+      // pojawiało się na liście to-do dopiero po ręcznym odświeżeniu strony.
+      // Dynamiczny import zrywa cykl sync → tasksFromCalendar → repo → sync.
+      if (!res) return
+      try {
+        const { materializeCalendarTasks } = await import('../tasksFromCalendar')
+        await materializeCalendarTasks()
+        await runTasksSync(false)
+      } catch (e) {
+        console.error('[sync] materializacja po synchronizacji nieudana', e)
+      }
+    })
   }, 1500)
 }
 

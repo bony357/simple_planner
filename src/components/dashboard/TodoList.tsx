@@ -51,26 +51,38 @@ export default function TodoList() {
   // lub googleEventId == sourceEventId (zmaterializowane z kalendarza).
   const events =
     useLiveQuery(() => db.events.toArray(), [], []) ?? []
+  // Jedno zadanie może mieć wiele wystąpień w kalendarzu (różne dni). Trzymamy
+  // najwcześniejszy start osobno dla każdego dnia (klucz: YYYY-MM-DD), aby przy
+  // zadaniu pokazać godzinę wystąpienia w danym dniu, a nie globalnie najwcześniejszą.
   const { startByTask, startByGoogleEvent } = useMemo(() => {
-    const startByTask = new Map<string, string>()
-    const startByGoogleEvent = new Map<string, string>()
+    const startByTask = new Map<string, Map<string, string>>()
+    const startByGoogleEvent = new Map<string, Map<string, string>>()
+    const put = (map: Map<string, Map<string, string>>, key: string, start: string) => {
+      const day = start.slice(0, 10)
+      let byDay = map.get(key)
+      if (!byDay) {
+        byDay = new Map()
+        map.set(key, byDay)
+      }
+      const cur = byDay.get(day)
+      if (!cur || start < cur) byDay.set(day, start)
+    }
     for (const e of events) {
       if (e.syncState === 'deleted') continue
-      if (e.taskId) {
-        const cur = startByTask.get(e.taskId)
-        if (!cur || e.start < cur) startByTask.set(e.taskId, e.start)
-      }
-      if (e.googleEventId) {
-        const cur = startByGoogleEvent.get(e.googleEventId)
-        if (!cur || e.start < cur) startByGoogleEvent.set(e.googleEventId, e.start)
-      }
+      if (e.taskId) put(startByTask, e.taskId, e.start)
+      if (e.googleEventId) put(startByGoogleEvent, e.googleEventId, e.start)
     }
     return { startByTask, startByGoogleEvent }
   }, [events])
 
-  const startFor = (t: Task): string | undefined =>
-    startByTask.get(t.id) ??
-    (t.sourceEventId ? startByGoogleEvent.get(t.sourceEventId) : undefined)
+  // Godzina wystąpienia zadania w jego dniu (dla zadań bez terminu — dziś).
+  const startFor = (t: Task): string | undefined => {
+    const day = t.dueDate ?? today
+    return (
+      startByTask.get(t.id)?.get(day) ??
+      (t.sourceEventId ? startByGoogleEvent.get(t.sourceEventId)?.get(day) : undefined)
+    )
+  }
 
   const catById = useMemo(
     () => new Map(categories.map((c) => [c.id, c])),
@@ -90,7 +102,7 @@ export default function TodoList() {
           return a.order - b.order
         }),
       })),
-    [tasks, categories, startByTask, startByGoogleEvent],
+    [tasks, categories, startByTask, startByGoogleEvent, today],
   )
 
   const overdueGroups = useMemo(() => groupByDay(overdue), [overdue])
