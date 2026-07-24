@@ -15,12 +15,12 @@ export default function TodoList() {
   const categories =
     useLiveQuery(() => db.categories.orderBy('order').toArray(), [], []) ?? []
 
-  // Zadania „na dziś": todo bez terminu lub z terminem <= dziś.
+  // Zadania „na dziś": todo bez terminu lub z terminem == dziś.
   const tasks =
     useLiveQuery(async () => {
       const all = await db.tasks.where('status').equals('todo').toArray()
       return all
-        .filter((t) => !t.dueDate || t.dueDate <= today)
+        .filter((t) => !t.dueDate || t.dueDate === today)
         .sort((a, b) => a.order - b.order)
     }, [today]) ?? []
 
