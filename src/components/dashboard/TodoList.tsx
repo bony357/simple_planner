@@ -103,9 +103,11 @@ export default function TodoList() {
     setQuick('')
   }
 
+  const [pickingIds, setPickingIds] = useState<Set<string>>(new Set())
+
   const pickOverdue = async (task: Task) => {
+    setPickingIds((prev) => new Set(prev).add(task.id))
     await updateTask(task.id, { dueDate: today })
-    setShowOverdue(false)
   }
 
   return (
@@ -215,9 +217,10 @@ export default function TodoList() {
                   </div>
                   <button
                     className="btn btn-primary"
+                    disabled={pickingIds.has(t.id)}
                     onClick={() => pickOverdue(t)}
                   >
-                    Na dziś
+                    {pickingIds.has(t.id) ? '✓ Dodano' : 'Na dziś'}
                   </button>
                 </div>
               ))}
@@ -245,9 +248,10 @@ export default function TodoList() {
                   </div>
                   <button
                     className="btn btn-primary"
+                    disabled={pickingIds.has(t.id)}
                     onClick={() => pickOverdue(t)}
                   >
-                    Na dziś
+                    {pickingIds.has(t.id) ? '✓ Dodano' : 'Na dziś'}
                   </button>
                 </div>
               ))}
